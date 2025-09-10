@@ -33,11 +33,9 @@ class _LearningPageState extends State<LearningPage> {
       ..initialize().then((_) {
         setState(() {});
       });
-
-    _loadProgress(); // Load the progress when the page is initialized
+    _loadProgress();
   }
 
-  // Load user progress (score from SharedPreferences)
   _loadProgress() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -45,10 +43,9 @@ class _LearningPageState extends State<LearningPage> {
     });
   }
 
-  // Save user progress
   _saveProgress() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setInt('score', _score); // Save score
+    prefs.setInt('score', _score);
   }
 
   @override
@@ -60,29 +57,40 @@ class _LearningPageState extends State<LearningPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Disaster Preparedness - Learning')),
+      appBar: AppBar(
+        title: Text('Disaster Preparedness - Learning'),
+        backgroundColor: Colors.deepOrange, // Vibrant app bar color
+      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title
+            // Title Section
             Text(
               'Learn About Earthquakes',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.orangeAccent,
+              ),
             ),
             SizedBox(height: 20),
 
-            // Text Description
+            // Video Description Section
             Text(
               'An earthquake is a sudden and violent shaking of the ground...',
-              style: TextStyle(fontSize: 18),
+              style: TextStyle(fontSize: 18, color: Colors.white70),
             ),
             SizedBox(height: 20),
 
-            // Video Player
+            // Video Player Section
             Container(
-              height: 200,
+              height: 250,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                color: Colors.black.withOpacity(0.5),
+              ),
               child: _controller.value.isInitialized
                   ? VideoPlayer(_controller)
                   : Center(child: CircularProgressIndicator()),
@@ -90,50 +98,110 @@ class _LearningPageState extends State<LearningPage> {
             SizedBox(height: 20),
 
             // Quiz Section
-            Text(
-              _quizQuestions[_questionIndex]['question'],
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            ..._quizQuestions[_questionIndex]['options']
-                .map<Widget>((option) {
-              return ListTile(
-                title: Text(option),
-                leading: Radio<int>(
-                  value: _quizQuestions[_questionIndex]['options'].indexOf(option),
-                  groupValue: _isAnswered ? _quizQuestions[_questionIndex]['correctAnswer'] : -1,
-                  onChanged: (int? value) {
-                    setState(() {
-                      if (!_isAnswered) {
-                        if (value == _quizQuestions[_questionIndex]['correctAnswer']) {
-                          _score++;
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.teal.shade100,
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _quizQuestions[_questionIndex]['question'],
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 20),
+                  ..._quizQuestions[_questionIndex]['options']
+                      .map<Widget>((option) {
+                    return GestureDetector(
+                      onTap: () {
+                        if (!_isAnswered) {
+                          setState(() {
+                            if (_quizQuestions[_questionIndex]['options']
+                                .indexOf(option) ==
+                                _quizQuestions[_questionIndex]
+                                ['correctAnswer']) {
+                              _score++;
+                            }
+                            _isAnswered = true;
+                          });
+                          _saveProgress();
                         }
-                        _isAnswered = true; // Disable further changes
-                      }
-                    });
-                    _saveProgress(); // Save score after each question
-                  },
-                ),
-              );
-            }).toList(),
-
+                      },
+                      child: Container(
+                        margin: EdgeInsets.symmetric(vertical: 10),
+                        padding: EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: _isAnswered &&
+                              _quizQuestions[_questionIndex]['options']
+                                  .indexOf(option) ==
+                                  _quizQuestions[_questionIndex]
+                                  ['correctAnswer']
+                              ? Colors.green
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 6,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _isAnswered &&
+                                  _quizQuestions[_questionIndex]['options']
+                                      .indexOf(option) ==
+                                      _quizQuestions[_questionIndex]
+                                      ['correctAnswer']
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_checked,
+                              color: Colors.deepOrange,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              option,
+                              style: TextStyle(fontSize: 18),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
             SizedBox(height: 20),
 
-            // Show current score
+            // Score Display Section
             Text(
               'Score: $_score',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepOrange,
+              ),
             ),
             SizedBox(height: 20),
 
-            // Next Question Button
+            // Next Question or Finish Quiz Button
             ElevatedButton(
               onPressed: () {
                 setState(() {
                   if (_questionIndex < _quizQuestions.length - 1) {
                     _questionIndex++;
-                    _isAnswered = false; // Reset for next question
+                    _isAnswered = false;
                   } else {
-                    // End of quiz logic
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
@@ -142,7 +210,7 @@ class _LearningPageState extends State<LearningPage> {
                         actions: <Widget>[
                           TextButton(
                             onPressed: () {
-                              Navigator.pop(context);
+                              Navigator.pushReplacementNamed(context, "/home");
                             },
                             child: Text('OK'),
                           ),
@@ -152,13 +220,25 @@ class _LearningPageState extends State<LearningPage> {
                   }
                 });
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepOrange, // Set the background color
+                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
               child: Text(
-                _questionIndex == _quizQuestions.length - 1 ? 'Finish Quiz' : 'Next Question',
+                _questionIndex == _quizQuestions.length - 1
+                    ? 'Finish Quiz'
+                    : 'Next Question',
+                style: TextStyle(fontSize: 16),
               ),
             ),
+
           ],
         ),
       ),
+      backgroundColor: Colors.teal.shade50, // Background color
     );
   }
 }

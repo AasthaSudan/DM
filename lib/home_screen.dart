@@ -1,5 +1,3 @@
-// lib/home_screen.dart
-
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -8,7 +6,23 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text('Home')),
       body: Center(
-        child: Text('Welcome to the Home Screen'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Welcome to the Home Screen',
+              style: TextStyle(fontSize: 24),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                // Navigate to the Learning Page
+                Navigator.pushNamed(context, '/learning');
+              },
+              child: Text('Go to Learning Page'),
+            ),
+          ],
+        ),
       ),
     );
   }
