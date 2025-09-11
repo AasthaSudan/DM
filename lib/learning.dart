@@ -36,20 +36,67 @@ class LearningPage extends StatelessWidget {
           ),
           Padding(
               padding: EdgeInsets.all(10),
+              child: SizedBox(
+                height: 150,
+                child: Card(
+                  color: Colors.white70,
+                  elevation: 5,
+                  child: ListTile(
+                    title: Text('Earthquake'),
+                    subtitle: Text('Introduction to Earthquake'),
+                    trailing: Icon(Icons.arrow_forward),
+                    onTap: () {
+
+                    },
+
+
+
+                  ),
+                ),
+              ),
+          ),
+
+          Padding(
+            padding: EdgeInsets.all(10),
+            child: SizedBox(
+              height: 150,
               child: Card(
                 color: Colors.white70,
-                 elevation: 5,
-              child: ListTile(
-                title: Text('Earthquake'),
-                subtitle: Text('Introduction to Earthquake'),
-                trailing: Icon(Icons.arrow_forward),
-                onTap: () {
+                elevation: 5,
+                child: ListTile(
+                  title: Text('Earthquake'),
+                  subtitle: Text('Introduction to Earthquake'),
+                  trailing: Icon(Icons.arrow_forward),
+                  onTap: () {
 
-                },
+                  },
 
-    
+
+
+                ),
               ),
-            ),
+            )
+          ),
+          Padding(
+            padding: EdgeInsets.all(10),
+            child: SizedBox(
+              height: 150,
+              child: Card(
+                color: Colors.white70,
+                elevation: 5,
+                child: ListTile(
+                  title: Text('Earthquake'),
+                  subtitle: Text('Introduction to Earthquake'),
+                  trailing: Icon(Icons.arrow_forward),
+                  onTap: () {
+
+                  },
+
+
+
+                ),
+              ),
+            )
           ),
         ],
       ),
