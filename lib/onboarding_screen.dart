@@ -1,5 +1,3 @@
-// lib/onboarding_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -39,20 +37,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF93D888), Color(0xFF659ECD)], // Blue gradient
+            colors: [Color(0xFF93D888), Color(0xFF659ECD)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
         child: SafeArea(
-          child: Column(
+          child: Column(  // Remove SingleChildScrollView
             children: [
               // Skip Button
               Align(
                 alignment: Alignment.topRight,
                 child: TextButton(
                   onPressed: () {
-                    Navigator.pushReplacementNamed(context, "/home");
+                    Navigator.pushReplacementNamed(context, "/auth");
                   },
                   child: const Text(
                     "Skip",
@@ -61,8 +59,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
 
-              // PageView with Animation
-              Expanded(
+              // PageView with Expanded to take available space
+              Expanded(  // Use Expanded instead of fixed height
                 child: PageView.builder(
                   controller: _controller,
                   onPageChanged: (index) {
@@ -72,21 +70,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   itemBuilder: (context, index) {
                     final data = onboardingData[index];
                     return Padding(
-                      padding: const EdgeInsets.all(20.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Lottie animation with fade-in effect on swipe
-                          AnimatedOpacity(
-                            opacity: _currentIndex == index ? 1.0 : 0.0,
-                            duration: const Duration(milliseconds: 500),
-                            child: SizedBox(
-                              height: 300, // Set height for Lottie animation
-                              child: Lottie.asset(data["animation"]!),
+                          // Flexible Lottie animation
+                          Flexible(
+                            flex: 3,
+                            child: AnimatedOpacity(
+                              opacity: _currentIndex == index ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 500),
+                              child: Lottie.asset(
+                                data["animation"]!,
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 20),
-                          // Title with slide-in animation
+
+                          // Title
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 500),
                             child: Text(
@@ -101,7 +103,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                           const SizedBox(height: 15),
-                          // Description with fade-in animation
+
+                          // Description
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 500),
                             child: Text(
@@ -112,9 +115,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 color: Colors.white70,
                               ),
                               textAlign: TextAlign.center,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 30),
                         ],
                       ),
                     );
@@ -122,67 +127,67 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
 
-              // SmoothPageIndicator
-              SmoothPageIndicator(
-                controller: _controller,
-                count: onboardingData.length,
-                effect: const ExpandingDotsEffect(
-                  dotHeight: 10,
-                  dotWidth: 10,
-                  activeDotColor: Colors.white,
-                  dotColor: Colors.white54,
+              // Page Indicator
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: SmoothPageIndicator(
+                  controller: _controller,
+                  count: onboardingData.length,
+                  effect: const ExpandingDotsEffect(
+                    dotHeight: 10,
+                    dotWidth: 10,
+                    activeDotColor: Colors.white,
+                    dotColor: Colors.white54,
+                  ),
                 ),
               ),
-              const SizedBox(height: 30),
 
-              // Row to align "Back" and "Get Started" buttons at the same level
+              // Bottom Navigation Buttons
               Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Back Button with flexible width
-                    Flexible(
-                      child: TextButton(
-                        onPressed: () {
-                          if (_currentIndex > 0) {
-                            _controller.previousPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut);
-                          } else {
-                            Navigator.pop(context); // Close the onboarding screen
-                          }
-                        },
-                        child: const Text(
-                          "Back",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    // Back Button
+                    TextButton(
+                      onPressed: () {
+                        if (_currentIndex > 0) {
+                          _controller.previousPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut);
+                        }
+                      },
+                      child: Text(
+                        "Back",
+                        style: TextStyle(
+                          color: _currentIndex > 0 ? Colors.white : Colors.transparent,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                    // Get Started Button with fixed width
+
+                    // Get Started/Next Button
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 500),
-                      width: _currentIndex == onboardingData.length - 1 ? 175 : 120, // Fixed width when not on the last page
+                      constraints: BoxConstraints(
+                        minWidth: _currentIndex == onboardingData.length - 1 ? 130 : 60,
+                        maxWidth: _currentIndex == onboardingData.length - 1 ? 160 : 60,
+                      ),
                       height: 60,
                       decoration: BoxDecoration(
                         color: Colors.blue,
                         borderRadius: _currentIndex == onboardingData.length - 1
-                            ? BorderRadius.circular(30) // Rounded rectangle on last page
-                            : null, // No borderRadius for circle
-                        shape: _currentIndex == onboardingData.length - 1
-                            ? BoxShape.rectangle // Rectangle on last page
-                            : BoxShape.circle, // Circle on others
+                            ? BorderRadius.circular(30)
+                            : BorderRadius.circular(30),
                       ),
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
+                          borderRadius: BorderRadius.circular(30),
                           onTap: () {
                             if (_currentIndex == onboardingData.length - 1) {
-                              Navigator.pushReplacementNamed(context, "/home");
+                              Navigator.pushReplacementNamed(context, "/auth");
                             } else {
                               _controller.nextPage(
                                   duration: const Duration(milliseconds: 300),
@@ -202,7 +207,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 : const Icon(
                               Icons.arrow_forward,
                               color: Colors.white,
-                              size: 30,
+                              size: 24,
                             ),
                           ),
                         ),

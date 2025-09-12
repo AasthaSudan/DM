@@ -1,5 +1,3 @@
-// lib/splash_screen.dart
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 
@@ -16,7 +14,9 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     // Navigate to onboarding after 3 seconds
     Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, '/onboarding');
+      if (mounted) { // Check if the widget is still in the tree
+        Navigator.pushReplacementNamed(context, '/onboarding');
+      }
     });
   }
 
@@ -76,6 +76,11 @@ class _SplashScreenState extends State<SplashScreen> {
                   buildDot(false),
                   buildDot(false),
                 ],
+              ),
+              const SizedBox(height: 30),
+              // Optional: Add a loading indicator or progress
+              const CircularProgressIndicator(
+                color: Colors.white,
               ),
             ],
           ),

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'splash_screen.dart';
 import 'onboarding_screen.dart';
-import 'home_screen.dart';
+import 'auth_screen.dart';
 import 'learning.dart';  // Import the learning path screen
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(MyApp());
 }
 
@@ -16,9 +17,10 @@ class MyApp extends StatelessWidget {
       routes: {
         "/splash": (context) => SplashScreen(),
         "/onboarding": (context) => OnboardingScreen(),
-        "/home": (context) => HomeScreen(),
+        "/auth": (context) => AuthScreen(),
         "/learning": (context) => LearningPage(), // Learning path screen
       },
+      debugShowCheckedModeBanner: false,
     );
   }
 }
