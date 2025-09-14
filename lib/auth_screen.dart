@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sih/learning.dart';
+// Make sure to update the path to your LearningPage
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -29,13 +31,47 @@ class _AuthScreenState extends State<AuthScreen> {
 
   // Simulated callbacks for social buttons and signup/signin
   void _onSignUp() {
+    // Debugging print statements
+    print('Name: ${_nameController.text}');
+    print('Email: ${_emailController.text}');
+    print('Password: ${_passwordController.text}');
+    print('Confirm Password: ${_confirmPasswordController.text}');
+    print('Agree: $_agree');
+
+    // Check if all fields are filled and the password lengths are correct
     if (_agree &&
         _nameController.text.isNotEmpty &&
         _emailController.text.isNotEmpty &&
+        _passwordController.text.isNotEmpty &&
         _passwordController.text.length >= 6) {
+      // Check if passwords match
+      if (_passwordController.text != _confirmPasswordController.text) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Passwords do not match')),
+        );
+        return;
+      }
+
       // Handle sign-up logic here
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Signing up...')),
+      );
+
+      // Simulating user creation, you can replace this with an actual backend call
+      // For example, Firebase authentication or a custom API
+
+      // Here we're just going to print a success message and navigate
+      // You can replace this logic with actual data saving (e.g. Firebase)
+
+      // Simulate a successful signup and navigate to the Learning Page
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LearningPage()),
+      );
+    } else {
+      // If validation fails
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all the fields correctly')),
       );
     }
   }
@@ -274,7 +310,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             ? _onSignUp
                             : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: purple,
+                          backgroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -310,9 +346,8 @@ class _AuthScreenState extends State<AuthScreen> {
                         SocialIconButton(
                           assetName: 'assets/images/img_5.png',
                           label: 'A',
-                          onPressed: _onGoogle,
+                          onPressed: _onApple,
                         ),
-                        // You can add Apple or other buttons here similarly
                       ],
                     ),
                     const SizedBox(height: 18),

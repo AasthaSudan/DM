@@ -1,11 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'splash_screen.dart';
 import 'onboarding_screen.dart';
 import 'auth_screen.dart';
-import 'learning.dart';  // Import the learning path screen
+import 'learning.dart';
+import 'home_screen.dart'; // Ensure this file exists and is properly imported
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Set preferred orientations (optional)
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  // Set system UI overlay style (optional)
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
+
   runApp(MyApp());
 }
 
@@ -13,12 +32,95 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      initialRoute: "/splash", // The splash screen is the initial route
+      title: 'Disaster Preparedness',
+      theme: ThemeData(
+        primarySwatch: Colors.teal,
+        primaryColor: const Color(0xFF6C4EF6),
+        fontFamily: 'Inter',
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6C4EF6),
+          brightness: Brightness.light,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: const Color(0xFFF8F9FA),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFF6C4EF6), width: 2),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Colors.red, width: 1),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Colors.red, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          margin: const EdgeInsets.all(8),
+        ),
+        appBarTheme: const AppBarTheme(
+          elevation: 0,
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.black87,
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
+        ),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          selectedItemColor: Color(0xFF6C4EF6),
+          unselectedItemColor: Colors.grey,
+          type: BottomNavigationBarType.fixed,
+          elevation: 8,
+        ),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primaryColor: const Color(0xFF6C4EF6),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6C4EF6),
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      initialRoute: "/splash",
       routes: {
-        "/splash": (context) => SplashScreen(),
-        "/onboarding": (context) => OnboardingScreen(),
-        "/auth": (context) => AuthScreen(),
-        "/learning": (context) => LearningPage(), // Learning path screen
+        "/splash": (context) => const SplashScreen(),
+        "/onboarding": (context) => const OnboardingScreen(),
+        "/auth": (context) => const AuthScreen(),
+        "/home": (context) => const HomeScreen(),
+        "/learning": (context) => const LearningPage(),
+      },
+      onUnknownRoute: (settings) {
+        return MaterialPageRoute(
+          builder: (context) => const Scaffold(
+            body: Center(
+              child: Text(
+                'Page not found',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
+          ),
+        );
       },
       debugShowCheckedModeBanner: false,
     );
