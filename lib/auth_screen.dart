@@ -11,6 +11,7 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   // Form controllers and state
+  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -19,6 +20,11 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _showPassword = false;
   bool _showConfirmPassword = false;
   bool _agree = false;
+  bool _isLoading = false;
+
+  // Your app's green theme colors
+  static const Color primaryGreen = Color(0xFF21C573);
+  static const Color secondaryBlue = Color(0xFF1791B6);
 
   @override
   void dispose() {
@@ -29,351 +35,441 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-  // Simulated callbacks for social buttons and signup/signin
-  void _onSignUp() {
-    // Debugging print statements
-    print('Name: ${_nameController.text}');
-    print('Email: ${_emailController.text}');
-    print('Password: ${_passwordController.text}');
-    print('Confirm Password: ${_confirmPasswordController.text}');
-    print('Agree: $_agree');
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Email is required';
+    }
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+      return 'Enter a valid email';
+    }
+    return null;
+  }
 
-    // Check if all fields are filled and the password lengths are correct
-    if (_agree &&
-        _nameController.text.isNotEmpty &&
-        _emailController.text.isNotEmpty &&
-        _passwordController.text.isNotEmpty &&
-        _passwordController.text.length >= 6) {
-      // Check if passwords match
-      if (_passwordController.text != _confirmPasswordController.text) {
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    }
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    return null;
+  }
+
+  String? _validateConfirmPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please confirm your password';
+    }
+    if (value != _passwordController.text) {
+      return 'Passwords do not match';
+    }
+    return null;
+  }
+
+  String? _validateName(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Name is required';
+    }
+    if (value.length < 2) {
+      return 'Name must be at least 2 characters';
+    }
+    return null;
+  }
+
+  // Enhanced sign-up function with better validation
+  Future<void> _onSignUp() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (!_agree) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please accept the Terms & Conditions'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Simulate API call delay
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Debugging print statements
+      print('Name: ${_nameController.text}');
+      print('Email: ${_emailController.text}');
+      print('Password: ${_passwordController.text}');
+      print('Agree: $_agree');
+
+      // Show success message
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Passwords do not match')),
+          const SnackBar(
+            content: Text('Account created successfully!'),
+            backgroundColor: primaryGreen,
+          ),
         );
-        return;
+
+        // Navigate to home instead of learning page for better UX
+        Navigator.pushReplacementNamed(context, '/home');
       }
-
-      // Handle sign-up logic here
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Signing up...')),
-      );
-
-      // Simulating user creation, you can replace this with an actual backend call
-      // For example, Firebase authentication or a custom API
-
-      // Here we're just going to print a success message and navigate
-      // You can replace this logic with actual data saving (e.g. Firebase)
-
-      // Simulate a successful signup and navigate to the Learning Page
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const LearningPage()),
-      );
-    } else {
-      // If validation fails
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all the fields correctly')),
-      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sign-up failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   void _onSignInClick() {
-    // Navigate to SignIn screen or show dialog
+    // For now, just show a snackbar. In a real app, you'd navigate to a sign-in screen
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Navigate to Sign In')),
+      const SnackBar(content: Text('Sign In feature coming soon!')),
     );
   }
 
-  void _onGoogle() {
+  void _onSocialLogin(String provider) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google Sign-In pressed')),
-    );
-  }
-
-  void _onFacebook() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Facebook Sign-In pressed')),
-    );
-  }
-
-  void _onApple() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Apple Sign-In pressed')),
+      SnackBar(content: Text('$provider Sign-In coming soon!')),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final purple = const Color(0xFF6C4EF6);
-
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              purple.withOpacity(0.18),
-              Colors.white,
-              Colors.white,
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            stops: const [0, 0.45, 1],
+            colors: [Color(0xFF21C573), Color(0xFF1791B6)], // Your app theme
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
-        padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top,
-          left: 24,
-          right: 24,
-          bottom: 20,
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
-              ),
-              elevation: 8,
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 24,
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Logo Image
-                    SizedBox(
-                      height: 72,
-                      width: 72,
-                      child: Image.asset(
-                        'assets/images/img.png',
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Title
-                    const Text(
-                      'Create Account',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF111111),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-
-                    // Subtitle
-                    const Text(
-                      'Join our disaster preparedness community.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF6B7280),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Name Field
-                    TextField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Name',
-                        prefixIcon: const Icon(Icons.person, color: Color(0xFF8E8E93)),
-                        filled: true,
-                        fillColor: const Color(0xFFF4F5F7),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Email Field
-                    TextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: const Icon(Icons.email, color: Color(0xFF8E8E93)),
-                        filled: true,
-                        fillColor: const Color(0xFFF4F5F7),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        hintText: 'example@gmail.com',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Password Field
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: !_showPassword,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        filled: true,
-                        fillColor: const Color(0xFFF4F5F7),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _showPassword ? Icons.visibility : Icons.visibility_off,
-                            color: const Color(0xFF8E8E93),
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _showPassword = !_showPassword;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Confirm Password Field
-                    TextField(
-                      controller: _confirmPasswordController,
-                      obscureText: !_showConfirmPassword,
-                      decoration: InputDecoration(
-                        labelText: 'Confirm Password',
-                        filled: true,
-                        fillColor: const Color(0xFFF4F5F7),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _showConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                            color: const Color(0xFF8E8E93),
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _showConfirmPassword = !_showConfirmPassword;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Terms & Conditions Checkbox
-                    Row(
+                elevation: 12,
+                shadowColor: Colors.black.withOpacity(0.1),
+                color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Checkbox(
-                          value: _agree,
-                          activeColor: purple,
-                          onChanged: (val) {
-                            setState(() {
-                              _agree = val ?? false;
-                            });
-                          },
-                        ),
-                        Flexible(
-                          child: RichText(
-                            text: TextSpan(
-                              text: 'Agree with ',
-                              style: const TextStyle(color: Colors.black, fontSize: 13),
-                              children: [
-                                TextSpan(
-                                  text: 'Terms & Condition',
-                                  style: TextStyle(
-                                    color: purple,
-                                    fontWeight: FontWeight.w600,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                  // TODO: add gesture recognizer if you want link behavior
-                                ),
-                              ],
+                        // Logo/Shield Icon (since image path might not exist)
+                        Container(
+                          height: 80,
+                          width: 80,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [primaryGreen, secondaryBlue],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-
-                    // Sign Up Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _agree &&
-                            _nameController.text.isNotEmpty &&
-                            _emailController.text.isNotEmpty &&
-                            _passwordController.text.length >= 6
-                            ? _onSignUp
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
+                          child: const Icon(
+                            Icons.shield_outlined,
+                            size: 40,
+                            color: Colors.white,
+                          ),
                         ),
-                        child: const Text(
-                          'Sign Up',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                    // Or Divider
-                    _OrDivider(text: 'Or sign up with'),
-                    const SizedBox(height: 14),
-
-                    // Social Buttons Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SocialIconButton(
-                          assetName: 'assets/images/img_3.png',
-                          label: 'F',
-                          onPressed: _onFacebook,
-                        ),
-                        const SizedBox(width: 14),
-                        SocialIconButton(
-                          assetName: 'assets/images/img_4.png',
-                          label: 'G',
-                          onPressed: _onGoogle,
-                        ),
-                        const SizedBox(width: 14),
-                        SocialIconButton(
-                          assetName: 'assets/images/img_5.png',
-                          label: 'A',
-                          onPressed: _onApple,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Bottom line
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                        // Title
                         const Text(
-                          'Already have an account? ',
-                          style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                          'Create Account',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF111111),
+                          ),
                         ),
-                        GestureDetector(
-                          onTap: _onSignInClick,
-                          child: Text(
-                            'Sign In',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: purple,
-                              fontWeight: FontWeight.w600,
+                        const SizedBox(height: 8),
+
+                        // Subtitle
+                        const Text(
+                          'Join our disaster preparedness community',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w400,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Name Field
+                        TextFormField(
+                          controller: _nameController,
+                          validator: _validateName,
+                          decoration: InputDecoration(
+                            labelText: 'Full Name',
+                            prefixIcon: const Icon(Icons.person_outline, color: primaryGreen),
+                            filled: true,
+                            fillColor: const Color(0xFFF8F9FA),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: primaryGreen, width: 2),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: Colors.red, width: 1),
                             ),
                           ),
                         ),
+                        const SizedBox(height: 16),
+
+                        // Email Field
+                        TextFormField(
+                          controller: _emailController,
+                          validator: _validateEmail,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            labelText: 'Email Address',
+                            prefixIcon: const Icon(Icons.email_outlined, color: primaryGreen),
+                            filled: true,
+                            fillColor: const Color(0xFFF8F9FA),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: primaryGreen, width: 2),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: Colors.red, width: 1),
+                            ),
+                            hintText: 'example@gmail.com',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Password Field
+                        TextFormField(
+                          controller: _passwordController,
+                          validator: _validatePassword,
+                          obscureText: !_showPassword,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: const Icon(Icons.lock_outline, color: primaryGreen),
+                            filled: true,
+                            fillColor: const Color(0xFFF8F9FA),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: primaryGreen, width: 2),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: Colors.red, width: 1),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _showPassword ? Icons.visibility : Icons.visibility_off,
+                                color: const Color(0xFF8E8E93),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _showPassword = !_showPassword;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Confirm Password Field
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          validator: _validateConfirmPassword,
+                          obscureText: !_showConfirmPassword,
+                          decoration: InputDecoration(
+                            labelText: 'Confirm Password',
+                            prefixIcon: const Icon(Icons.lock_outline, color: primaryGreen),
+                            filled: true,
+                            fillColor: const Color(0xFFF8F9FA),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: primaryGreen, width: 2),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: Colors.red, width: 1),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _showConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                                color: const Color(0xFF8E8E93),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _showConfirmPassword = !_showConfirmPassword;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Terms & Conditions Checkbox
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _agree,
+                              activeColor: primaryGreen,
+                              onChanged: (val) {
+                                setState(() {
+                                  _agree = val ?? false;
+                                });
+                              },
+                            ),
+                            Expanded(
+                              child: RichText(
+                                text: const TextSpan(
+                                  text: 'I agree to the ',
+                                  style: TextStyle(color: Colors.black87, fontSize: 14),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Terms & Conditions',
+                                      style: TextStyle(
+                                        color: primaryGreen,
+                                        fontWeight: FontWeight.w600,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Sign Up Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _onSignUp,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryGreen,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 0,
+                              disabledBackgroundColor: Colors.grey[300],
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                                : const Text(
+                              'Create Account',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Or Divider
+                        _OrDivider(text: 'Or continue with'),
+                        const SizedBox(height: 20),
+
+                        // Social Buttons Row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            SocialIconButton(
+                              icon: Icons.facebook,
+                              color: const Color(0xFF1877F2),
+                              onPressed: () => _onSocialLogin('Facebook'),
+                            ),
+                            SocialIconButton(
+                              icon: Icons.g_mobiledata,
+                              color: const Color(0xFF4285F4),
+                              onPressed: () => _onSocialLogin('Google'),
+                            ),
+                            SocialIconButton(
+                              icon: Icons.apple,
+                              color: Colors.black,
+                              onPressed: () => _onSocialLogin('Apple'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Bottom sign-in link
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'Already have an account? ',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: _onSignInClick,
+                              child: const Text(
+                                'Sign In',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: primaryGreen,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -390,28 +486,45 @@ class _OrDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scrim = const Color(0x14000000);
     return Row(
       children: [
-        Expanded(child: Divider(thickness: 1, color: scrim)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text(text, style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
+        const Expanded(
+          child: Divider(
+            thickness: 1,
+            color: Color(0xFFE5E7EB),
+          ),
         ),
-        Expanded(child: Divider(thickness: 1, color: scrim)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF9CA3AF),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const Expanded(
+          child: Divider(
+            thickness: 1,
+            color: Color(0xFFE5E7EB),
+          ),
+        ),
       ],
     );
   }
 }
 
 class SocialIconButton extends StatelessWidget {
-  final String? assetName;
-  final String? label;
+  final IconData icon;
+  final Color color;
   final VoidCallback onPressed;
 
   const SocialIconButton({
-    this.assetName,
-    this.label,
+    super.key,
+    required this.icon,
+    required this.color,
     required this.onPressed,
   });
 
@@ -419,18 +532,22 @@ class SocialIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      shape: const CircleBorder(),
-      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFE5E7EB)),
+      ),
       child: InkWell(
-        customBorder: const CircleBorder(),
+        borderRadius: BorderRadius.circular(12),
         onTap: onPressed,
         child: Container(
-          height: 54,
-          width: 54,
+          height: 48,
+          width: 80,
           alignment: Alignment.center,
-          child: assetName != null
-              ? Image.asset(assetName!, height: 24, width: 24, fit: BoxFit.contain)
-              : Text(label ?? '', style: const TextStyle(fontSize: 22)),
+          child: Icon(
+            icon,
+            color: color,
+            size: 24,
+          ),
         ),
       ),
     );

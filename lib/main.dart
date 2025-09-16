@@ -35,15 +35,17 @@ class MyApp extends StatelessWidget {
       title: 'Disaster Preparedness',
       theme: ThemeData(
         primarySwatch: Colors.teal,
-        primaryColor: const Color(0xFF6C4EF6),
+        primaryColor: const Color(0xFF21C573), // Updated to match your green theme
         fontFamily: 'Inter',
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6C4EF6),
+          seedColor: const Color(0xFF21C573), // Updated to match your green theme
           brightness: Brightness.light,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             elevation: 0,
+            backgroundColor: const Color(0xFF21C573), // Explicit green background
+            foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -59,7 +61,7 @@ class MyApp extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFF6C4EF6), width: 2),
+            borderSide: const BorderSide(color: Color(0xFF21C573), width: 2), // Green focus border
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
@@ -86,19 +88,38 @@ class MyApp extends StatelessWidget {
           systemOverlayStyle: SystemUiOverlayStyle.dark,
         ),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          selectedItemColor: Color(0xFF6C4EF6),
+          selectedItemColor: Color(0xFF21C573), // Green for selected items
           unselectedItemColor: Colors.grey,
           type: BottomNavigationBarType.fixed,
           elevation: 8,
+        ),
+        // Additional theme properties for consistency
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Color(0xFF21C573),
+          foregroundColor: Colors.white,
+        ),
+        progressIndicatorTheme: const ProgressIndicatorThemeData(
+          color: Color(0xFF21C573),
         ),
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
-        primaryColor: const Color(0xFF6C4EF6),
+        primaryColor: const Color(0xFF21C573),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6C4EF6),
+          seedColor: const Color(0xFF21C573), // Updated to match your green theme
           brightness: Brightness.dark,
+        ),
+        // Dark theme specific overrides
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF21C573),
+            foregroundColor: Colors.white,
+          ),
+        ),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          selectedItemColor: Color(0xFF21C573),
+          unselectedItemColor: Colors.grey,
         ),
         useMaterial3: true,
       ),
