@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:sih/learning.dart';
 
+/// ✅ Centralized color scheme
+class AppColors {
+  static const Color primaryGreen = Color(0xFF21C573);
+  static const Color secondaryBlue = Color(0xFF21C573);
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -11,20 +17,29 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  // Your app's green theme colors
-  static const Color primaryGreen = Color(0xFF21C573);
-  static const Color secondaryBlue = Color(0xFF1791B6);
-
   final List<Widget> _screens = [
-    const HomeTab(),
+    HomeTab(onTabChange: (index) {
+      // this will be overridden at runtime
+    }),
     const LearningPage(),
     const ProfileTab(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    // inject callback into HomeTab for switching tabs
+    final updatedScreens = [
+      HomeTab(onTabChange: (i) {
+        setState(() {
+          _currentIndex = i;
+        });
+      }),
+      const LearningPage(),
+      const ProfileTab(),
+    ];
+
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: updatedScreens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -33,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: primaryGreen, // Updated to green theme
+        selectedItemColor: AppColors.primaryGreen,
         unselectedItemColor: Colors.grey,
         backgroundColor: Colors.white,
         elevation: 8,
@@ -60,10 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class HomeTab extends StatelessWidget {
-  const HomeTab({super.key});
-
-  static const Color primaryGreen = Color(0xFF21C573);
-  static const Color secondaryBlue = Color(0xFF1791B6);
+  final void Function(int) onTabChange;
+  const HomeTab({super.key, required this.onTabChange});
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +84,7 @@ class HomeTab extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [primaryGreen, secondaryBlue], // Your theme gradient
+            colors: [AppColors.primaryGreen, AppColors.secondaryBlue],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -79,7 +92,7 @@ class HomeTab extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // Custom Header
+              // Header
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -87,11 +100,7 @@ class HomeTab extends StatelessWidget {
                   children: [
                     const Row(
                       children: [
-                        Icon(
-                          Icons.shield_outlined,
-                          color: Colors.white,
-                          size: 28,
-                        ),
+                        Icon(Icons.shield_outlined, color: Colors.white, size: 28),
                         SizedBox(width: 12),
                         Text(
                           'PrepareEd',
@@ -102,11 +111,8 @@ class HomeTab extends StatelessWidget {
                           ),
                         ),
                         Spacer(),
-                        Icon(
-                          Icons.notifications_outlined,
-                          color: Colors.white,
-                          size: 24,
-                        ),
+                        Icon(Icons.notifications_outlined,
+                            color: Colors.white, size: 24),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -138,24 +144,18 @@ class HomeTab extends StatelessWidget {
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 14,
-                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           SizedBox(height: 16),
                           Row(
                             children: [
-                              Icon(
-                                Icons.security,
-                                color: Colors.white,
-                                size: 16,
-                              ),
+                              Icon(Icons.security, color: Colors.white, size: 16),
                               SizedBox(width: 6),
                               Text(
                                 'Your safety is our priority',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ],
@@ -167,15 +167,13 @@ class HomeTab extends StatelessWidget {
                 ),
               ),
 
-              // Main Content Area
+              // Content
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
-                    ),
+                    borderRadius:
+                    BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
                   ),
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(20),
@@ -194,14 +192,11 @@ class HomeTab extends StatelessWidget {
                         const SizedBox(height: 4),
                         const Text(
                           'Access essential features quickly',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF6B7280),
-                          ),
+                          style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
                         ),
                         const SizedBox(height: 20),
 
-                        // Quick Action Cards Grid
+                        // Quick Actions Grid
                         GridView.count(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -216,19 +211,15 @@ class HomeTab extends StatelessWidget {
                               Icons.emergency,
                               const Color(0xFFEF4444),
                               Colors.red.shade50,
-                                  () {
-                                _showFeatureComingSoon(context, 'Emergency Contacts');
-                              },
+                                  () => _showFeatureComingSoon(context, 'Emergency Contacts'),
                             ),
                             _buildQuickActionCard(
                               context,
                               'Learning\nModules',
                               Icons.school,
-                              primaryGreen,
+                              AppColors.primaryGreen,
                               Colors.green.shade50,
-                                  () {
-                                Navigator.pushNamed(context, '/learning');
-                              },
+                                  () => onTabChange(1), // ✅ Switch tab instead of Navigator
                             ),
                             _buildQuickActionCard(
                               context,
@@ -236,9 +227,7 @@ class HomeTab extends StatelessWidget {
                               Icons.checklist_rtl,
                               const Color(0xFF3B82F6),
                               Colors.blue.shade50,
-                                  () {
-                                _showFeatureComingSoon(context, 'Safety Checklist');
-                              },
+                                  () => _showFeatureComingSoon(context, 'Safety Checklist'),
                             ),
                             _buildQuickActionCard(
                               context,
@@ -246,16 +235,13 @@ class HomeTab extends StatelessWidget {
                               Icons.cloud_outlined,
                               const Color(0xFFF59E0B),
                               Colors.orange.shade50,
-                                  () {
-                                _showFeatureComingSoon(context, 'Weather Alerts');
-                              },
+                                  () => _showFeatureComingSoon(context, 'Weather Alerts'),
                             ),
                           ],
                         ),
 
                         const SizedBox(height: 32),
 
-                        // Recent Activity Section
                         const Text(
                           'Recent Activity',
                           style: TextStyle(
@@ -266,12 +252,11 @@ class HomeTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        // Activity Cards
                         _buildActivityCard(
                           'Earthquake Safety Module',
                           'Completed 2 days ago',
                           Icons.done_all,
-                          primaryGreen,
+                          AppColors.primaryGreen,
                         ),
                         const SizedBox(height: 12),
                         _buildActivityCard(
@@ -309,9 +294,7 @@ class HomeTab extends StatelessWidget {
       ) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -337,11 +320,7 @@ class HomeTab extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 28,
-                ),
+                child: Icon(icon, color: iconColor, size: 28),
               ),
               const SizedBox(height: 12),
               Text(
@@ -376,11 +355,7 @@ class HomeTab extends StatelessWidget {
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 20,
-            ),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -397,19 +372,12 @@ class HomeTab extends StatelessWidget {
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF6B7280),
-                  ),
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                 ),
               ],
             ),
           ),
-          const Icon(
-            Icons.arrow_forward_ios,
-            size: 14,
-            color: Color(0xFF9CA3AF),
-          ),
+          const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFF9CA3AF)),
         ],
       ),
     );
@@ -419,71 +387,64 @@ class HomeTab extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('$feature feature coming soon!'),
-        backgroundColor: primaryGreen,
+        backgroundColor: AppColors.primaryGreen,
         behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 }
 
-// Placeholder Profile Page
+// ✅ Profile Tab
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
-
-  static const Color primaryGreen = Color(0xFF21C573);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Profile',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: primaryGreen,
+        title: const Text('Profile', style: TextStyle(fontWeight: FontWeight.w600)),
+        backgroundColor: AppColors.primaryGreen,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [primaryGreen, Colors.white],
+            colors: [AppColors.primaryGreen, AppColors.secondaryBlue],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            stops: const [0, 0.3],
           ),
         ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.white,
-                child: Icon(
-                  Icons.person,
-                  size: 60,
-                  color: primaryGreen,
-                ),
+        child: Center(
+          child: Card(
+            margin: const EdgeInsets.all(20),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 6,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: AppColors.primaryGreen,
+                    child: Icon(Icons.person, size: 60, color: Colors.white),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'User Profile',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Manage your account and preferences',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
               ),
-              SizedBox(height: 16),
-              Text(
-                'User Profile',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Manage your account and preferences',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
