@@ -34,6 +34,10 @@ dependencies:
   lottie: ^3.1.0
   url_launcher: ^6.1.14
   shared_preferences: ^2.2.0
+  firebase_core: ^2.0.0 # Or whatever the latest version is
+  firebase_auth: ^4.0.0  # Example, if you're using firebase_auth
+  cloud_firestore: ^4.0.0
+  # Example, if you're using firestore
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

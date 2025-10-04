@@ -1,3 +1,4 @@
+// lib/screens/splash_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 
@@ -12,9 +13,8 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Navigate to onboarding after 3 seconds
     Timer(const Duration(seconds: 3), () {
-      if (mounted) { // Check if the widget is still in the tree
+      if (mounted) {
         Navigator.pushReplacementNamed(context, '/onboarding');
       }
     });
@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF21C573), Color(0xFF1791B6)], // green → blue gradient
+            colors: [Color(0xFF21C573), Color(0xFF1791B6)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -35,7 +35,6 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Shield Icon inside circle
               Container(
                 padding: const EdgeInsets.all(30),
                 decoration: BoxDecoration(
@@ -49,17 +48,15 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Title
               const Text(
                 "PrepareEd",
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 10),
-              // Subtitle
               const Text(
                 "Disaster Preparedness & Awareness",
                 style: TextStyle(
@@ -67,36 +64,14 @@ class _SplashScreenState extends State<SplashScreen> {
                   color: Colors.white70,
                 ),
               ),
-              const SizedBox(height: 30),
-              // Page indicator (3 dots)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  buildDot(true),
-                  buildDot(false),
-                  buildDot(false),
-                ],
-              ),
-              const SizedBox(height: 30),
-              // Optional: Add a loading indicator or progress
+              const SizedBox(height: 50),
               const CircularProgressIndicator(
                 color: Colors.white,
+                strokeWidth: 3,
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget buildDot(bool isActive) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      height: 8,
-      width: isActive ? 16 : 8,
-      decoration: BoxDecoration(
-        color: isActive ? Colors.white : Colors.white54,
-        borderRadius: BorderRadius.circular(12),
       ),
     );
   }
