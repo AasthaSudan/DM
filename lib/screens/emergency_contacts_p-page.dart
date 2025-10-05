@@ -1,7 +1,8 @@
+// lib/screens/emergency_contacts_page.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/database_service.dart';
 
 class EmergencyContactsPage extends StatefulWidget {
   const EmergencyContactsPage({super.key});
@@ -11,7 +12,6 @@ class EmergencyContactsPage extends StatefulWidget {
 }
 
 class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
-  List<Map<String, String>> _personalContacts = [];
   final List<Map<String, String>> _emergencyServices = [
     {
       'name': 'Emergency Services',
@@ -54,30 +54,12 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   @override
   void initState() {
     super.initState();
-    _loadPersonalContacts();
+    _loadContacts();
   }
 
-  Future<void> _loadPersonalContacts() async {
-    final prefs = await SharedPreferences.getInstance();
-    final contactsJson = prefs.getStringList('personal_contacts') ?? [];
-    setState(() {
-      _personalContacts = contactsJson.map((contact) {
-        final parts = contact.split('|');
-        return {
-          'name': parts[0],
-          'number': parts[1],
-          'relationship': parts.length > 2 ? parts[2] : 'Contact',
-        };
-      }).toList();
-    });
-  }
-
-  Future<void> _savePersonalContacts() async {
-    final prefs = await SharedPreferences.getInstance();
-    final contactsJson = _personalContacts.map((contact) {
-      return '${contact['name']}|${contact['number']}|${contact['relationship']}';
-    }).toList();
-    await prefs.setStringList('personal_contacts', contactsJson);
+  Future<void> _loadContacts() async {
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    await dbService.loadEmergencyContacts();
   }
 
   @override
@@ -94,7 +76,6 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
         child: SafeArea(
           child: Column(
             children: [
-              // Custom Header
               Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Row(
@@ -125,7 +106,6 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                 ),
               ),
 
-              // Main Content
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
@@ -139,7 +119,6 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                     length: 2,
                     child: Column(
                       children: [
-                        // Tab Bar
                         Container(
                           margin: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
@@ -158,19 +137,12 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                             indicatorSize: TabBarIndicatorSize.tab,
                             dividerColor: Colors.transparent,
                             tabs: const [
-                              Tab(
-                                icon: Icon(Icons.local_phone),
-                                text: 'Emergency',
-                              ),
-                              Tab(
-                                icon: Icon(Icons.contacts),
-                                text: 'Personal',
-                              ),
+                              Tab(icon: Icon(Icons.local_phone), text: 'Emergency'),
+                              Tab(icon: Icon(Icons.contacts), text: 'Personal'),
                             ],
                           ),
                         ),
 
-                        // Tab Content
                         Expanded(
                           child: TabBarView(
                             children: [
@@ -215,79 +187,78 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   }
 
   Widget _buildPersonalTab() {
-    return Column(
-      children: [
-        if (_personalContacts.isEmpty)
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF21C573).withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.contact_phone,
-                      size: 60,
-                      color: Color(0xFF21C573),
-                    ),
+    return Consumer<DatabaseService>(
+      builder: (context, dbService, _) {
+        final contacts = dbService.emergencyContacts;
+
+        if (contacts.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF21C573).withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'No Personal Contacts',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: const Icon(
+                    Icons.contact_phone,
+                    size: 60,
+                    color: Color(0xFF21C573),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Add your family and friends for quick access',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey.shade500,
-                    ),
-                    textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'No Personal Contacts',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: _showAddContactDialog,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Contact'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF21C573),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Add your family and friends for quick access',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey.shade500,
                   ),
-                ],
-              ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _showAddContactDialog,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Contact'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF21C573),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+              ],
             ),
-          )
-        else
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: _personalContacts.length,
-              itemBuilder: (context, index) {
-                final contact = _personalContacts[index];
-                return _buildContactCard(
-                  contact['name']!,
-                  contact['number']!,
-                  contact['relationship']!,
-                  Icons.person,
-                  const Color(0xFF21C573),
-                  onDelete: () => _deleteContact(index),
-                );
-              },
-            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: _loadContacts,
+          child: ListView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: contacts.length,
+            itemBuilder: (context, index) {
+              final contact = contacts[index];
+              return _buildContactCard(
+                contact['name']!,
+                contact['number']!,
+                contact['relationship']!,
+                Icons.person,
+                const Color(0xFF21C573),
+                onDelete: () => _deleteContact(contact['id']!),
+              );
+            },
           ),
-      ],
+        );
+      },
     );
   }
 
@@ -318,8 +289,6 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: color.withOpacity(0.3)),
@@ -454,9 +423,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Container(
@@ -465,10 +432,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                 color: const Color(0xFF21C573).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.person_add,
-                color: Color(0xFF21C573),
-              ),
+              child: const Icon(Icons.person_add, color: Color(0xFF21C573)),
             ),
             const SizedBox(width: 12),
             const Text('Add Contact'),
@@ -482,13 +446,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
               decoration: InputDecoration(
                 labelText: 'Name',
                 prefixIcon: const Icon(Icons.person),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF21C573)),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
             const SizedBox(height: 16),
@@ -498,13 +456,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
               decoration: InputDecoration(
                 labelText: 'Phone Number',
                 prefixIcon: const Icon(Icons.phone),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF21C573)),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
             const SizedBox(height: 16),
@@ -514,13 +466,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                 labelText: 'Relationship',
                 prefixIcon: const Icon(Icons.group),
                 hintText: 'e.g., Family, Friend, Doctor',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF21C573)),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ],
@@ -530,74 +476,62 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF21C573), Color(0xFF1791B6)],
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty &&
-                    numberController.text.isNotEmpty) {
-                  setState(() {
-                    _personalContacts.add({
-                      'name': nameController.text,
-                      'number': numberController.text,
-                      'relationship': relationshipController.text.isEmpty
-                          ? 'Contact'
-                          : relationshipController.text,
-                    });
-                  });
-                  _savePersonalContacts();
-                  Navigator.pop(context);
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.isNotEmpty && numberController.text.isNotEmpty) {
+                final dbService = Provider.of<DatabaseService>(context, listen: false);
+                bool success = await dbService.addEmergencyContact({
+                  'name': nameController.text,
+                  'number': numberController.text,
+                  'relationship': relationshipController.text.isEmpty
+                      ? 'Contact'
+                      : relationshipController.text,
+                });
+
+                Navigator.pop(context);
+
+                if (success) {
                   _showSuccessSnackBar('Contact added successfully');
+                } else {
+                  _showErrorSnackBar('Failed to add contact');
                 }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                foregroundColor: Colors.white,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('Add Contact'),
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF21C573),
             ),
+            child: const Text('Add Contact'),
           ),
         ],
       ),
     );
   }
 
-  void _deleteContact(int index) {
+  void _deleteContact(String contactId) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Delete Contact'),
-        content: Text('Are you sure you want to delete ${_personalContacts[index]['name']}?'),
+        content: const Text('Are you sure you want to delete this contact?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _personalContacts.removeAt(index);
-              });
-              _savePersonalContacts();
+            onPressed: () async {
+              final dbService = Provider.of<DatabaseService>(context, listen: false);
+              bool success = await dbService.deleteEmergencyContact(contactId);
               Navigator.pop(context);
-              _showSuccessSnackBar('Contact deleted');
+
+              if (success) {
+                _showSuccessSnackBar('Contact deleted');
+              } else {
+                _showErrorSnackBar('Failed to delete contact');
+              }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
@@ -611,9 +545,6 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
         content: Text(message),
         backgroundColor: const Color(0xFF21C573),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
       ),
     );
   }
@@ -624,9 +555,6 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
         content: Text(message),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
       ),
     );
   }
