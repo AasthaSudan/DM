@@ -1,4 +1,3 @@
-// lib/screens/profile_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -57,6 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
         child: SafeArea(
           child: Column(
             children: [
+              // Header
               Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Row(
@@ -74,6 +74,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
 
+              // Profile Content
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
@@ -89,7 +90,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         const SizedBox(height: 20),
 
-                        // Profile Picture
+                        // Profile Picture Section
                         Stack(
                           children: [
                             Container(
@@ -115,7 +116,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               )
                                   : Consumer<AuthService>(
                                 builder: (context, auth, _) {
-                                  final name = auth.currentUser?.displayName ?? 'User';
+                                  final name = auth.currentUser?.displayName ?? 'U';
                                   return Center(
                                     child: Text(
                                       name[0].toUpperCase(),
@@ -140,11 +141,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     color: Color(0xFF21C573),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
+                                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
                                 ),
                               ),
                             ),
@@ -169,10 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 const SizedBox(height: 4),
                                 Text(
                                   auth.currentUser?.email ?? '',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
+                                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                                 ),
                               ],
                             );
@@ -181,28 +175,20 @@ class _ProfilePageState extends State<ProfilePage> {
 
                         const SizedBox(height: 30),
 
-                        // Statistics
+                        // Statistics Section
                         Consumer<DatabaseService>(
                           builder: (context, dbService, _) {
-                            final userData = dbService.userData;
-                            final safetyScore = userData?['safetyScore'] ?? 0;
-                            final modulesCompleted = userData?['modulesCompleted'] ?? 0;
+                            final userData = dbService.userData ?? {};
+                            final safetyScore = userData['safetyScore'] ?? 0;
+                            final modulesCompleted = userData['modulesCompleted'] ?? 0;
 
                             return Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 _buildStatColumn('Safety Score', '$safetyScore%', Icons.shield),
-                                Container(
-                                  height: 40,
-                                  width: 1,
-                                  color: Colors.grey[300],
-                                ),
+                                _divider(),
                                 _buildStatColumn('Modules', '$modulesCompleted/5', Icons.school),
-                                Container(
-                                  height: 40,
-                                  width: 1,
-                                  color: Colors.grey[300],
-                                ),
+                                _divider(),
                                 _buildStatColumn('Rank', 'Beginner', Icons.stars),
                               ],
                             );
@@ -212,36 +198,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: 30),
 
                         // Profile Options
-                        _buildProfileOption(
-                          context,
-                          'Edit Profile',
-                          Icons.edit,
-                              () => _showEditProfile(context),
-                        ),
-                        _buildProfileOption(
-                          context,
-                          'Emergency Info',
-                          Icons.medical_information,
-                              () => _showComingSoon(context, 'Emergency Info'),
-                        ),
-                        _buildProfileOption(
-                          context,
-                          'Certificates',
-                          Icons.workspace_premium,
-                              () => _showComingSoon(context, 'Certificates'),
-                        ),
-                        _buildProfileOption(
-                          context,
-                          'Settings',
-                          Icons.settings,
-                              () => _showComingSoon(context, 'Settings'),
-                        ),
-                        _buildProfileOption(
-                          context,
-                          'Help & Support',
-                          Icons.help_outline,
-                              () => _showComingSoon(context, 'Help & Support'),
-                        ),
+                        _buildProfileOption(context, 'Edit Profile', Icons.edit, () => _showEditProfile(context)),
+                        _buildProfileOption(context, 'Emergency Info', Icons.medical_information,
+                                () => _showComingSoon(context, 'Emergency Info')),
+                        _buildProfileOption(context, 'Certificates', Icons.workspace_premium,
+                                () => _showComingSoon(context, 'Certificates')),
+                        _buildProfileOption(context, 'Settings', Icons.settings,
+                                () => _showComingSoon(context, 'Settings')),
+                        _buildProfileOption(context, 'Help & Support', Icons.help_outline,
+                                () => _showComingSoon(context, 'Help & Support')),
 
                         const SizedBox(height: 20),
 
@@ -255,9 +220,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               side: const BorderSide(color: Colors.red),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
                         ),
@@ -273,33 +236,24 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // Divider between stats
+  Widget _divider() => Container(height: 40, width: 1, color: Colors.grey[300]);
+
+  // Statistics Widget
   Widget _buildStatColumn(String label, String value, IconData icon) {
     return Column(
       children: [
         Icon(icon, color: const Color(0xFF21C573), size: 24),
         const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF21C573),
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
+        Text(value,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF21C573))),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
 
-  Widget _buildProfileOption(
-      BuildContext context,
-      String title,
-      IconData icon,
-      VoidCallback onTap,
-      ) {
+  // Reusable Profile Option Widget
+  Widget _buildProfileOption(BuildContext context, String title, IconData icon, VoidCallback onTap) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -320,6 +274,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // Edit Profile Dialog
   void _showEditProfile(BuildContext context) {
     final nameController = TextEditingController();
     final authService = Provider.of<AuthService>(context, listen: false);
@@ -330,24 +285,16 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Edit Profile'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                prefixIcon: const Icon(Icons.person),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
+        content: TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            labelText: 'Name',
+            prefixIcon: const Icon(Icons.person),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
               if (nameController.text.isNotEmpty) {
@@ -364,9 +311,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 setState(() {});
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF21C573),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF21C573)),
             child: const Text('Save'),
           ),
         ],
@@ -374,6 +319,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // Logout Confirmation Dialog
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -382,10 +328,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
               final authService = Provider.of<AuthService>(context, listen: false);
@@ -400,6 +343,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // Coming Soon Snackbar
   void _showComingSoon(BuildContext context, String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

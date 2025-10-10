@@ -34,9 +34,10 @@ dependencies:
   lottie: ^3.1.0
   url_launcher: ^6.1.14
   shared_preferences: ^2.2.0
-  firebase_core: ^2.0.0 # Or whatever the latest version is
-  firebase_auth: ^4.0.0  # Example, if you're using firebase_auth
-  cloud_firestore: ^4.0.0
+  firebase_core: ^4.1.1 # Or whatever the latest version is
+  firebase_auth: ^6.1.0  # Example, if you're using firebase_auth
+  cloud_firestore: ^6.0.2
+  provider: ^6.1.2
   # Example, if you're using firestore
 
   # The following adds the Cupertino Icons font to your application.
@@ -46,14 +47,14 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  email_validator: ^2.1.17
+  email_validator: ^3.0.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
   video_player: ^2.2.12
   shared_preferences: ^2.0.15
   cached_network_image: ^3.2.0
