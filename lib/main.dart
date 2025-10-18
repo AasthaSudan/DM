@@ -1,4 +1,3 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -14,7 +13,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+  }
 
   // Set system UI overlays
   SystemChrome.setPreferredOrientations([
@@ -80,9 +83,8 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        initialRoute: '/',
+        home: const AuthWrapper(),
         routes: {
-          '/': (context) => const AuthWrapper(),
           '/onboarding': (context) => const OnboardingScreen(),
           '/auth': (context) => const AuthScreen(),
           '/home': (context) => const HomeScreen(),
@@ -99,10 +101,12 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthService>(
       builder: (context, authService, _) {
+        // Show splash while loading
         if (authService.isLoading) {
           return const SplashScreen();
         }
 
+        // Navigate based on auth state
         if (authService.currentUser != null) {
           return const HomeScreen();
         }

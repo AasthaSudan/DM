@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:flutter/services.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -15,21 +14,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<Map<String, String>> onboardingData = [
     {
-      "animation": "assets/lottie/Animation - 1757337668353.json",
+      "icon": "shield_outlined",
       "title": "Be Prepared",
       "desc": "Learn how to prepare before earthquakes, floods, and fires."
     },
     {
-      "animation": "assets/lottie/health insurance.json",
+      "icon": "health_and_safety",
       "title": "Safety First",
       "desc": "Get tips for first aid and safe evacuation during emergencies."
     },
     {
-      "animation": "assets/lottie/Connect with us.json",
+      "icon": "people",
       "title": "Stay Connected",
       "desc": "Connect with community and rescue teams in real-time."
     },
   ];
+
+  IconData _getIcon(String iconName) {
+    switch (iconName) {
+      case 'shield_outlined':
+        return Icons.shield_outlined;
+      case 'health_and_safety':
+        return Icons.health_and_safety;
+      case 'people':
+        return Icons.people;
+      default:
+        return Icons.info;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +49,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF21C573), Color(0xFF1791B6)], // Matching your app theme
+            colors: [Color(0xFF21C573), Color(0xFF1791B6)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -52,11 +64,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   padding: const EdgeInsets.only(right: 8.0, top: 8.0),
                   child: TextButton(
                     onPressed: () {
+                      HapticFeedback.lightImpact();
                       Navigator.pushReplacementNamed(context, "/auth");
                     },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    ),
                     child: const Text(
                       "Skip",
                       style: TextStyle(
@@ -69,7 +79,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
 
-              // PageView with Expanded to take available space
+              // PageView
               Expanded(
                 child: PageView.builder(
                   controller: _controller,
@@ -84,79 +94,59 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Flexible Lottie animation with better error handling
-                          Flexible(
-                            flex: 3,
-                            child: AnimatedOpacity(
-                              opacity: _currentIndex == index ? 1.0 : 0.0,
-                              duration: const Duration(milliseconds: 500),
-                              child: Container(
-                                constraints: const BoxConstraints(
-                                  maxHeight: 300,
-                                  maxWidth: 300,
+                          // Icon Animation
+                          TweenAnimationBuilder<double>(
+                            duration: const Duration(milliseconds: 600),
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.scale(
+                                  scale: 0.8 + (0.2 * value),
+                                  child: child,
                                 ),
-                                child: Lottie.asset(
-                                  data["animation"]!,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      height: 200,
-                                      width: 200,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(100),
-                                      ),
-                                      child: const Icon(
-                                        Icons.image_not_supported_outlined,
-                                        size: 80,
-                                        color: Colors.white54,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-
-                          // Title with better typography
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 500),
-                            child: Text(
-                              data["title"]!,
-                              key: ValueKey(data["title"]),
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: -0.5,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Description with better spacing
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 500),
+                              );
+                            },
                             child: Container(
-                              key: ValueKey(data["desc"]),
-                              constraints: const BoxConstraints(maxWidth: 300),
-                              child: Text(
-                                data["desc"]!,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                  height: 1.5,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                                textAlign: TextAlign.center,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
+                              padding: const EdgeInsets.all(40),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _getIcon(data["icon"]!),
+                                size: 100,
+                                color: Colors.white,
                               ),
                             ),
                           ),
                           const SizedBox(height: 40),
+
+                          // Title
+                          Text(
+                            data["title"]!,
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Description
+                          Container(
+                            constraints: const BoxConstraints(maxWidth: 300),
+                            child: Text(
+                              data["desc"]!,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                height: 1.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                         ],
                       ),
                     );
@@ -164,24 +154,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
 
-              // Page Indicator with theme colors
+              // Page Indicator
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: SmoothPageIndicator(
-                  controller: _controller,
-                  count: onboardingData.length,
-                  effect: const ExpandingDotsEffect(
-                    dotHeight: 8,
-                    dotWidth: 8,
-                    expansionFactor: 3,
-                    spacing: 8,
-                    activeDotColor: Colors.white,
-                    dotColor: Colors.white54,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    onboardingData.length,
+                        (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: _currentIndex == index ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _currentIndex == index
+                            ? Colors.white
+                            : Colors.white54,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
                   ),
                 ),
               ),
 
-              // Bottom Navigation Buttons
+              // Navigation Buttons
               Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Row(
@@ -192,15 +188,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       duration: const Duration(milliseconds: 300),
                       opacity: _currentIndex > 0 ? 1.0 : 0.0,
                       child: TextButton(
-                        onPressed: _currentIndex > 0 ? () {
+                        onPressed: _currentIndex > 0
+                            ? () {
+                          HapticFeedback.lightImpact();
                           _controller.previousPage(
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
                           );
-                        } : null,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
+                        }
+                            : null,
                         child: const Text(
                           "Back",
                           style: TextStyle(
@@ -212,12 +208,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ),
 
-                    // Get Started/Next Button with green theme
+                    // Next/Get Started Button
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
                       height: 56,
-                      width: _currentIndex == onboardingData.length - 1 ? 140 : 56,
+                      width: _currentIndex == onboardingData.length - 1
+                          ? 140
+                          : 56,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(28),
@@ -234,6 +231,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: InkWell(
                           borderRadius: BorderRadius.circular(28),
                           onTap: () {
+                            HapticFeedback.lightImpact();
                             if (_currentIndex == onboardingData.length - 1) {
                               Navigator.pushReplacementNamed(context, "/auth");
                             } else {
@@ -246,7 +244,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: Center(
                             child: AnimatedSwitcher(
                               duration: const Duration(milliseconds: 200),
-                              child: _currentIndex == onboardingData.length - 1
+                              child: _currentIndex ==
+                                  onboardingData.length - 1
                                   ? const Text(
                                 "Get Started",
                                 key: ValueKey("get_started"),

@@ -1,4 +1,3 @@
-// lib/screens/learning_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,7 +13,7 @@ class LearningPage extends StatefulWidget {
 
 class _LearningPageState extends State<LearningPage> {
   Map<String, String?> _badges = {};
-  Map<String, int> _moduleScores = {}; // Preloaded scores
+  Map<String, int> _moduleScores = {};
   final List<String> _modules = ['earthquake', 'flood', 'fire', 'cyclone', 'firstaid'];
 
   @override
@@ -24,7 +23,6 @@ class _LearningPageState extends State<LearningPage> {
     _loadModuleScores();
   }
 
-  // Load badges from SharedPreferences
   Future<void> _loadBadges() async {
     final prefs = await SharedPreferences.getInstance();
     final Map<String, String?> tempBadges = {};
@@ -34,7 +32,6 @@ class _LearningPageState extends State<LearningPage> {
     setState(() => _badges = tempBadges);
   }
 
-  // Preload all module scores from DatabaseService
   Future<void> _loadModuleScores() async {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     final Map<String, int> tempScores = {};
@@ -50,59 +47,56 @@ class _LearningPageState extends State<LearningPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF21C573), Color(0xFF1791B6)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF21C573), Color(0xFF1791B6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(context),
-              Expanded(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
                   ),
-                  child: RefreshIndicator(
-                    onRefresh: () async {
-                      await _loadBadges();
-                      await _loadModuleScores();
-                    },
-                    child: ListView(
-                      padding: const EdgeInsets.all(20),
-                      children: _modules.map((module) {
-                        final score = _moduleScores[module] ?? 0;
-                        return _buildLearningCard(
-                          context,
-                          _getModuleTitle(module),
-                          _getModuleSubtitle(module),
-                          _getModuleIcon(module),
-                          _getModuleColor(module),
-                          module,
-                          score,
-                        );
-                      }).toList(),
-                    ),
+                ),
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await _loadBadges();
+                    await _loadModuleScores();
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.all(20),
+                    children: _modules.map((module) {
+                      final score = _moduleScores[module] ?? 0;
+                      return _buildLearningCard(
+                        context,
+                        _getModuleTitle(module),
+                        _getModuleSubtitle(module),
+                        _getModuleIcon(module),
+                        _getModuleColor(module),
+                        module,
+                        score,
+                      );
+                    }).toList(),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // ------------------- HEADER -------------------
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
@@ -133,7 +127,6 @@ class _LearningPageState extends State<LearningPage> {
     );
   }
 
-  // ------------------- LEARNING CARD -------------------
   Widget _buildLearningCard(
       BuildContext context,
       String title,
@@ -183,7 +176,6 @@ class _LearningPageState extends State<LearningPage> {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                // Icon
                 Container(
                   width: 60,
                   height: 60,
@@ -199,7 +191,6 @@ class _LearningPageState extends State<LearningPage> {
                   child: Icon(icon, color: color, size: 30),
                 ),
                 const SizedBox(width: 16),
-                // Text + Progress
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,7 +250,6 @@ class _LearningPageState extends State<LearningPage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Badge Icon (if any)
                 if (badgeIcon != null)
                   Icon(badgeIcon, color: badgeColor, size: 28)
                 else
@@ -272,7 +262,6 @@ class _LearningPageState extends State<LearningPage> {
     );
   }
 
-  // ------------------- MODULE DATA HELPERS -------------------
   String _getModuleTitle(String module) {
     switch (module) {
       case 'earthquake':
