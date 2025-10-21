@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import 'drill_page.dart';
 import 'learning.dart';
 import 'emergency_contacts_page.dart' hide DatabaseService;
+import 'weather_alerts_page.dart';
+import 'profile_page.dart'; // Profile page for all users
 
 class HomeScreen extends StatefulWidget {
     const HomeScreen({super.key});
@@ -13,357 +16,335 @@ class HomeScreen extends StatefulWidget {
     State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
     int _currentIndex = 0;
+    late PageController _pageController;
+    late AnimationController _animationController;
 
-    // Refresh user data and module progress
-    Future<void> _refreshData(BuildContext context) async {
-        final dbService = Provider.of<DatabaseService>(context, listen: false);
-        final authService = Provider.of<AuthService>(context, listen: false);
-        final currentUser = authService.currentUser;
+    @override
+    void initState() {
+        super.initState();
+        _pageController = PageController();
+        _animationController = AnimationController(
+            vsync: this,
+            duration: const Duration(milliseconds: 800),
+        )..forward();
+    }
 
-        if (currentUser != null) {
-            await dbService.loadUserData(uid: currentUser.uid);
-            // Add loadModuleProgress if needed
-            // await dbService.loadModuleProgress();
-        }
+    @override
+    void dispose() {
+        _pageController.dispose();
+        _animationController.dispose();
+        super.dispose();
     }
 
     @override
     Widget build(BuildContext context) {
+        final authService = Provider.of<AuthService>(context);
+        final role = authService.role; // student, parent, admin
+        const green = Color(0xFF21C573);
+        const blue = Color(0xFF1791B6);
+
         return Scaffold(
-            body: Container(
-                decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                        colors: [Color(0xFF21C573), Color(0xFF1791B6)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                    ),
+            body: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                    _homePage(context, role),
+                    const ProfileScreen(userData: {},),
+                ],
+            ),
+            bottomNavigationBar: BottomNavigationBar(
+                currentIndex: _currentIndex,
+                backgroundColor: Colors.white,
+                selectedItemColor: green,
+                unselectedItemColor: Colors.grey,
+                showUnselectedLabels: true,
+                items: const [
+                    BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+                    BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
+                ],
+                onTap: (index) {
+                    setState(() => _currentIndex = index);
+                    _pageController.jumpToPage(index);
+                },
+            ),
+        );
+    }
+
+    Widget _homePage(BuildContext context, String role) {
+        final size = MediaQuery.of(context).size;
+        const green = Color(0xFF21C573);
+        const blue = Color(0xFF1791B6);
+
+        return Container(
+            decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                    colors: [green, blue],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                 ),
-                child: SafeArea(
-                    child: Column(
-                        children: [
-                            Padding(
-                                padding: const EdgeInsets.all(20.0),
-                                child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ),
+            child: SafeArea(
+                child: Column(
+                    children: [
+                        _buildHeader(context, size, green),
+                        Expanded(
+                            child: Container(
+                                decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                                ),
+                                child: ListView(
+                                    padding: const EdgeInsets.all(20),
                                     children: [
-                                        Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                                Consumer<AuthService>(
-                                                    builder: (context, auth, _) {
-                                                        final name = auth.currentUser?.displayName ?? 'User';
-                                                        final firstName = name.split(' ')[0];
-                                                        return Text(
-                                                            'Hello, $firstName!',
-                                                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                                                color: Colors.white,
-                                                                fontWeight: FontWeight.bold,
-                                                            ),
-                                                        );
-                                                    },
-                                                ),
-                                                Text(
-                                                    'Stay Safe, Stay Prepared',
-                                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                        color: Colors.white70,
-                                                    ),
-                                                ),
-                                            ],
-                                        ),
-                                        Container(
-                                            decoration: BoxDecoration(
-                                                color: Colors.white.withOpacity(0.2),
-                                                borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: IconButton(
-                                                icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                                                onPressed: () {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                        const SnackBar(
-                                                            content: Text('No new notifications'),
-                                                            backgroundColor: Color(0xFF21C573),
-                                                            behavior: SnackBarBehavior.floating,
-                                                        ),
-                                                    );
-                                                },
-                                            ),
-                                        ),
+                                        _buildProgressSection(context, size, green, blue),
+                                        SizedBox(height: size.height * 0.03),
+                                        _buildQuickActionsSection(context, size, green, blue, role),
                                     ],
                                 ),
                             ),
-
-                            Expanded(
-                                child: Container(
-                                    decoration: const BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.only(
-                                            topLeft: Radius.circular(30),
-                                            topRight: Radius.circular(30),
-                                        ),
-                                    ),
-                                    child: RefreshIndicator(
-                                        onRefresh: () async => _refreshData(context),
-                                        child: SingleChildScrollView(
-                                            physics: const AlwaysScrollableScrollPhysics(),
-                                            padding: const EdgeInsets.all(20.0),
-                                            child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                    Consumer<DatabaseService>(
-                                                        builder: (context, dbService, _) {
-                                                            final userData = dbService.userData;
-                                                            final modulesCompleted = userData?['modulesCompleted'] ?? 0;
-                                                            final safetyScore = userData?['safetyScore'] ?? 0;
-
-                                                            return Container(
-                                                                width: double.infinity,
-                                                                padding: const EdgeInsets.all(20),
-                                                                decoration: BoxDecoration(
-                                                                    gradient: LinearGradient(
-                                                                        colors: [
-                                                                            const Color(0xFF21C573).withOpacity(0.1),
-                                                                            const Color(0xFF1791B6).withOpacity(0.1),
-                                                                        ],
-                                                                        begin: Alignment.topLeft,
-                                                                        end: Alignment.bottomRight,
-                                                                    ),
-                                                                    borderRadius: BorderRadius.circular(16),
-                                                                    border: Border.all(
-                                                                        color: const Color(0xFF21C573).withOpacity(0.2),
-                                                                    ),
-                                                                ),
-                                                                child: Column(
-                                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                                    children: [
-                                                                        Row(
-                                                                            children: [
-                                                                                Container(
-                                                                                    padding: const EdgeInsets.all(8),
-                                                                                    decoration: BoxDecoration(
-                                                                                        color: const Color(0xFF21C573),
-                                                                                        borderRadius: BorderRadius.circular(8),
-                                                                                    ),
-                                                                                    child: const Icon(
-                                                                                        Icons.shield_outlined,
-                                                                                        color: Colors.white,
-                                                                                        size: 24,
-                                                                                    ),
-                                                                                ),
-                                                                                const SizedBox(width: 12),
-                                                                                Expanded(
-                                                                                    child: Column(
-                                                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                                                        children: [
-                                                                                            Text(
-                                                                                                'Your Progress',
-                                                                                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                                                                                    fontWeight: FontWeight.bold,
-                                                                                                    color: const Color(0xFF21C573),
-                                                                                                ),
-                                                                                            ),
-                                                                                            const SizedBox(height: 4),
-                                                                                            Text(
-                                                                                                'Keep learning to stay safe',
-                                                                                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                                                                    color: Colors.grey[600],
-                                                                                                ),
-                                                                                            ),
-                                                                                        ],
-                                                                                    ),
-                                                                                ),
-                                                                            ],
-                                                                        ),
-                                                                        const SizedBox(height: 16),
-                                                                        Row(
-                                                                            children: [
-                                                                                Expanded(
-                                                                                    child: _buildStatCard(
-                                                                                        context,
-                                                                                        'Modules\nCompleted',
-                                                                                        '$modulesCompleted/5',
-                                                                                        Icons.school,
-                                                                                    ),
-                                                                                ),
-                                                                                const SizedBox(width: 12),
-                                                                                Expanded(
-                                                                                    child: _buildStatCard(
-                                                                                        context,
-                                                                                        'Safety\nScore',
-                                                                                        '$safetyScore%',
-                                                                                        Icons.trending_up,
-                                                                                    ),
-                                                                                ),
-                                                                            ],
-                                                                        ),
-                                                                    ],
-                                                                ),
-                                                            );
-                                                        },
-                                                    ),
-
-                                                    const SizedBox(height: 24),
-                                                    Text(
-                                                        'Quick Actions',
-                                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                                            fontWeight: FontWeight.bold,
-                                                            color: Colors.grey[800],
-                                                        ),
-                                                    ),
-                                                    const SizedBox(height: 16),
-
-                                                    GridView.count(
-                                                        shrinkWrap: true,
-                                                        physics: const NeverScrollableScrollPhysics(),
-                                                        crossAxisCount: 2,
-                                                        crossAxisSpacing: 16,
-                                                        mainAxisSpacing: 16,
-                                                        childAspectRatio: 1.1,
-                                                        children: [
-                                                            _buildActionCard(
-                                                                context,
-                                                                'Emergency\nContacts',
-                                                                Icons.contact_emergency,
-                                                                2, // Navigate to Emergency Contacts
-                                                            ),
-                                                            _buildActionCard(
-                                                                context,
-                                                                'Learning\nModules',
-                                                                Icons.school,
-                                                                1, // Navigate to Learning page
-                                                            ),
-                                                            _buildActionCard(
-                                                                context,
-                                                                'Safety\nDrills',
-                                                                Icons.sports_martial_arts,
-                                                                -1, // Special case for drills page
-                                                            ),
-                                                            _buildActionCard(
-                                                                context,
-                                                                'Weather\nAlerts',
-                                                                Icons.cloud_circle,
-                                                                null,
-                                                            ),
-                                                        ],
-                                                    ),
-                                                ],
-                                            ),
-                                        ),
-                                    ),
-                                ),
-                            ),
-                        ],
-                    ),
+                        ),
+                    ],
                 ),
             ),
         );
     }
 
-    Widget _buildStatCard(BuildContext context, String label, String value, IconData icon) {
-        return Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.3)),
+    Widget _buildHeader(BuildContext context, Size size, Color green) {
+        return Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: size.width * 0.05,
+                vertical: size.height * 0.015,
             ),
-            child: Column(
+            child: Row(
                 children: [
-                    Icon(icon, color: const Color(0xFF21C573), size: 24),
-                    const SizedBox(height: 8),
-                    Text(
-                        value,
-                        style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF21C573),
+                    const SizedBox(width: 8),
+                    Expanded(
+                        child: Consumer<AuthService>(
+                            builder: (context, auth, _) {
+                                final name = auth.currentUser?.displayName ?? 'User';
+                                final firstName = name.split(' ').first;
+                                return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                        Text(
+                                            'Hey, $firstName 👋',
+                                            style: GoogleFonts.poppins(
+                                                fontSize: size.width * 0.055,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                            ),
+                                        ),
+                                        SizedBox(height: size.height * 0.005),
+                                        Text(
+                                            'Stay safe. Stay prepared.',
+                                            style: GoogleFonts.poppins(
+                                                fontSize: size.width * 0.033,
+                                                color: Colors.white.withOpacity(0.9),
+                                                fontWeight: FontWeight.w400,
+                                            ),
+                                        ),
+                                    ],
+                                );
+                            },
                         ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                        label,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        textAlign: TextAlign.center,
+                    Container(
+                        decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                        ),
+                        child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('No new notifications')),
+                                    );
+                                },
+                                child: Padding(
+                                    padding: EdgeInsets.all(size.width * 0.028),
+                                    child: Icon(Icons.notifications_none_rounded, color: Colors.white, size: size.width * 0.06),
+                                ),
+                            ),
+                        ),
                     ),
                 ],
             ),
         );
     }
 
-    Widget _buildActionCard(
-        BuildContext context,
-        String title,
-        IconData icon,
-        int? navigationIndex,
-        ) {
-        return GestureDetector(
-            onTap: () {
-                if (navigationIndex == -1) {
-                    // Navigate to Drills page
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const DrillsPage()),
-                    );
-                } else if (navigationIndex != null) {
-                    // Navigate to specific tab by changing the index in HomeScreen
-                    setState(() {
-                        _currentIndex = navigationIndex;
-                    });
-                } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text('$title coming soon!'),
-                            backgroundColor: const Color(0xFF21C573),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                    );
-                }
+    Widget _buildProgressSection(BuildContext context, Size size, Color green, Color blue) {
+        return Consumer<DatabaseService>(
+            builder: (context, dbService, _) {
+                final userData = dbService.userData;
+                final modulesCompleted = userData?['modulesCompleted'] ?? 0;
+                final safetyScore = userData?['safetyScore'] ?? 0;
+
+                return Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(size.width * 0.045),
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.white,
+                        boxShadow: [BoxShadow(color: green.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5))],
+                    ),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                            Row(
+                                children: [
+                                    Container(
+                                        padding: EdgeInsets.all(size.width * 0.025),
+                                        decoration: BoxDecoration(
+                                            gradient: LinearGradient(colors: [green, green.withOpacity(0.8)]),
+                                            borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Icon(Icons.shield_rounded, color: Colors.white, size: size.width * 0.06),
+                                    ),
+                                    SizedBox(width: size.width * 0.03),
+                                    Expanded(
+                                        child: Text(
+                                            'Your Progress',
+                                            style: GoogleFonts.poppins(
+                                                fontSize: size.width * 0.048,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.grey[800],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                            SizedBox(height: size.height * 0.02),
+                            Row(
+                                children: [
+                                    Expanded(
+                                        child: _statCard(label: 'Modules\nCompleted', value: '$modulesCompleted/5', icon: Icons.school_rounded, color: green, size: size),
+                                    ),
+                                    SizedBox(width: size.width * 0.03),
+                                    Expanded(
+                                        child: _statCard(label: 'Safety\nScore', value: '$safetyScore%', icon: Icons.trending_up_rounded, color: blue, size: size),
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                );
             },
-            child: Container(
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                        BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+        );
+    }
+
+    Widget _buildQuickActionsSection(BuildContext context, Size size, Color green, Color blue, String role) {
+        List<Map<String, dynamic>> actions = [];
+
+        if (role == 'student') {
+            actions = [
+                {'title': 'Emergency\nContacts', 'icon': Icons.contact_phone_rounded, 'page': const EmergencyContactsPage()},
+                {'title': 'Learning\nModules', 'icon': Icons.menu_book_rounded, 'page': const Learning(moduleType: 'earthquake')},
+                {'title': 'Safety\nDrills', 'icon': Icons.health_and_safety_rounded, 'page': const DrillsPage()},
+                {'title': 'Weather\nAlerts', 'icon': Icons.cloud_rounded, 'page': const WeatherAlertsPage()},
+            ];
+        } else if (role == 'parent') {
+            actions = [
+                {'title': 'Children\nProgress', 'icon': Icons.child_care_rounded, 'page': const Learning(moduleType: 'earthquake')},
+                {'title': 'Emergency\nContacts', 'icon': Icons.contact_phone_rounded, 'page': const EmergencyContactsPage()},
+            ];
+        } else if (role == 'admin') {
+            actions = [
+                {'title': 'Manage\nUsers', 'icon': Icons.manage_accounts_rounded, 'page': const Learning(moduleType: 'earthquake')},
+                {'title': 'Reports', 'icon': Icons.bar_chart_rounded, 'page': const Learning(moduleType: 'earthquake')},
+            ];
+        }
+
+        return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+                Row(
+                    children: [
+                        Container(
+                            width: 4,
+                            height: 22,
+                            decoration: BoxDecoration(
+                                gradient: LinearGradient(colors: [green, blue], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+                                borderRadius: BorderRadius.circular(2),
+                            ),
                         ),
+                        SizedBox(width: size.width * 0.03),
+                        Text('Quick Actions', style: GoogleFonts.poppins(fontSize: size.width * 0.05, fontWeight: FontWeight.w700, color: Colors.grey[800])),
                     ],
-                    border: Border.all(color: const Color(0xFF21C573).withOpacity(0.1)),
                 ),
-                child: Padding(
-                    padding: const EdgeInsets.all(20),
+                SizedBox(height: size.height * 0.02),
+                GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    crossAxisSpacing: size.width * 0.035,
+                    mainAxisSpacing: size.width * 0.035,
+                    childAspectRatio: 1.0,
+                    children: actions.map((action) => _actionCard(context, action['title'], action['icon'], action['page'], size, green, blue)).toList(),
+                ),
+            ],
+        );
+    }
+
+    Widget _actionCard(BuildContext context, String title, IconData icon, Widget page, Size size, Color green, Color blue) {
+        return Material(
+            color: Colors.transparent,
+            child: InkWell(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => page)),
+                borderRadius: BorderRadius.circular(18),
+                child: Container(
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        color: Colors.white,
+                        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.12), blurRadius: 12, offset: const Offset(0, 4))],
+                    ),
                     child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                             Container(
-                                padding: const EdgeInsets.all(16),
+                                padding: EdgeInsets.all(size.width * 0.035),
                                 decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                        colors: [Color(0xFF21C573), Color(0xFF1791B6)],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
+                                    gradient: LinearGradient(colors: [green, blue], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                                    borderRadius: BorderRadius.circular(14),
+                                    boxShadow: [BoxShadow(color: green.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
                                 ),
-                                child: Icon(icon, color: Colors.white, size: 28),
+                                child: Icon(icon, color: Colors.white, size: size.width * 0.07),
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                                title,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[800],
-                                ),
-                                textAlign: TextAlign.center,
+                            SizedBox(height: size.height * 0.012),
+                            Padding(
+                                padding: EdgeInsets.symmetric(horizontal: size.width * 0.02),
+                                child: Text(title, style: GoogleFonts.poppins(fontSize: size.width * 0.034, fontWeight: FontWeight.w600, color: Colors.grey[800]), textAlign: TextAlign.center),
                             ),
                         ],
                     ),
                 ),
+            ),
+        );
+    }
+
+    Widget _statCard({required String label, required String value, required IconData icon, required Color color, required Size size}) {
+        return Container(
+            padding: EdgeInsets.symmetric(vertical: size.height * 0.02, horizontal: size.width * 0.03),
+            decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withOpacity(0.2), width: 1.5)),
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                    Container(
+                        padding: EdgeInsets.all(size.width * 0.02),
+                        decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+                        child: Icon(icon, color: color, size: size.width * 0.06),
+                    ),
+                    SizedBox(height: size.height * 0.008),
+                    FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: GoogleFonts.poppins(fontSize: size.width * 0.048, fontWeight: FontWeight.w700, color: color))),
+                    SizedBox(height: size.height * 0.004),
+                    Text(label, style: GoogleFonts.poppins(fontSize: size.width * 0.028, color: Colors.grey[600], fontWeight: FontWeight.w500, height: 1.2), textAlign: TextAlign.center),
+                ],
             ),
         );
     }

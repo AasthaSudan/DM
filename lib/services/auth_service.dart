@@ -11,179 +11,154 @@ class AuthService extends ChangeNotifier {
   User? _currentUser;
   bool _isLoading = true;
   String? _errorMessage;
+  String _role = 'student';
+  bool _profileComplete = false;
 
+  // Getters
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  String get role => _role;
+  bool get profileComplete => _profileComplete;
 
   AuthService() {
-    _auth.authStateChanges().listen((User? user) {
+    _auth.authStateChanges().listen((User? user) async {
       _currentUser = user;
+      if (_currentUser != null) {
+        await _fetchUserData();
+      }
       _isLoading = false;
       notifyListeners();
     });
   }
 
-  // 📋 Clear error manually (useful for UI)
-  void clearError() {
-    _errorMessage = null;
-    notifyListeners();
+  // Fetch Role + Profile Status
+  Future<void> _fetchUserData() async {
+    if (_currentUser == null) return;
+    final doc = await _firestore.collection('users').doc(_currentUser!.uid).get();
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>? ?? {};
+      _role = data['role'] ?? 'student';
+      _profileComplete = data['profileComplete'] ?? false;
+    }
   }
 
-  // 🧾 Sign Up with Email & Password
-  Future<bool> signUpWithEmail(String email, String password, String name) async {
+  // Sign Up
+  Future<bool> signUpWithEmail(String email, String password, String name, {String role = 'student'}) async {
     try {
-      _errorMessage = null;
-      notifyListeners();
-
-      UserCredential result = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      _setLoading(true);
+      UserCredential result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
 
       if (result.user != null) {
-        // Update user display name
         await result.user!.updateDisplayName(name);
-
-        // Save user info in Firestore
         await _firestore.collection('users').doc(result.user!.uid).set({
           'name': name,
           'email': email,
+          'role': role,
           'createdAt': FieldValue.serverTimestamp(),
           'profileComplete': false,
           'safetyScore': 0,
           'modulesCompleted': 0,
           'totalModules': 5,
-        }, SetOptions(merge: true));
-
+        });
         _currentUser = result.user;
-        notifyListeners();
+        _role = role;
+        _profileComplete = false;
         return true;
       }
-
-      return false;
-    } on FirebaseAuthException catch (e) {
-      _handleError(e.code);
       return false;
     } catch (e) {
-      _handleGenericError('Failed to sign up. Please try again.');
+      _handleFirebaseError(e);
       return false;
+    } finally {
+      _setLoading(false);
     }
   }
 
-  // 🔒 Sign In with Email & Password
+  // Sign In
   Future<bool> signInWithEmail(String email, String password) async {
     try {
-      _errorMessage = null;
-      notifyListeners();
-
-      UserCredential result = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      if (result.user != null) {
-        _currentUser = result.user;
-        notifyListeners();
-        return true;
-      }
-
-      return false;
-    } on FirebaseAuthException catch (e) {
-      _handleError(e.code);
-      return false;
+      _setLoading(true);
+      UserCredential result = await _auth.signInWithEmailAndPassword(email: email, password: password);
+      _currentUser = result.user;
+      await _fetchUserData();
+      return true;
     } catch (e) {
-      _handleGenericError('Failed to sign in. Please try again.');
+      _handleFirebaseError(e);
       return false;
+    } finally {
+      _setLoading(false);
     }
   }
 
-  // 👋 Sign Out
+  // Google Sign In
+  Future<bool> signInWithGoogle() async {
+    try {
+      _setLoading(true);
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return false;
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(idToken: googleAuth.idToken, accessToken: googleAuth.accessToken);
+
+      UserCredential result = await _auth.signInWithCredential(credential);
+      _currentUser = result.user;
+
+      if (result.additionalUserInfo?.isNewUser ?? false) {
+        await _firestore.collection('users').doc(result.user!.uid).set({
+          'name': result.user!.displayName ?? '',
+          'email': result.user!.email ?? '',
+          'role': 'student',
+          'profileComplete': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      await _fetchUserData();
+      return true;
+    } catch (e) {
+      _handleGenericError("Google Sign-In failed!");
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Sign Out
   Future<void> signOut() async {
     await _auth.signOut();
     await _googleSignIn.signOut();
     _currentUser = null;
+    _role = 'student';
+    _profileComplete = false;
     notifyListeners();
   }
 
-  // 🔑 Google Sign In
-  Future<bool> signInWithGoogle() async {
-    try {
-      _errorMessage = null;
-      notifyListeners();
-
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
-      if (googleUser == null) {
-        // User cancelled the sign-in
-        return false;
-      }
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      if (googleAuth.accessToken != null && googleAuth.idToken != null) {
-        final OAuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-
-        UserCredential result = await _auth.signInWithCredential(credential);
-
-        if (result.user != null) {
-          // Save user info in Firestore if new user
-          if (result.additionalUserInfo?.isNewUser ?? false) {
-            await _firestore.collection('users').doc(result.user!.uid).set({
-              'name': result.user!.displayName ?? '',
-              'email': result.user!.email ?? '',
-              'createdAt': FieldValue.serverTimestamp(),
-              'profileComplete': false,
-              'safetyScore': 0,
-              'modulesCompleted': 0,
-              'totalModules': 5,
-            }, SetOptions(merge: true));
-          }
-
-          _currentUser = result.user;
-          notifyListeners();
-          return true;
-        }
-      }
-
-      return false;
-    } catch (e) {
-      _handleGenericError('Google sign in failed. Please try again.');
-      return false;
-    }
+  // Helpers
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
   }
 
-  void _handleError(String errorCode) {
-    switch (errorCode) {
-      case 'email-already-in-use':
-        _errorMessage = 'This email is already in use. Please try a different one.';
-        break;
-      case 'weak-password':
-        _errorMessage = 'Password is too weak. Please choose a stronger password.';
-        break;
-      case 'invalid-email':
-        _errorMessage = 'Invalid email address. Please check and try again.';
-        break;
-      case 'user-not-found':
-        _errorMessage = 'No account found with this email. Please sign up first.';
-        break;
-      case 'wrong-password':
-        _errorMessage = 'Incorrect password. Please try again.';
-        break;
-      case 'invalid-credential':
-        _errorMessage = 'Invalid email or password. Please try again.';
-        break;
-      case 'too-many-requests':
-        _errorMessage = 'Too many attempts. Please try again later.';
-        break;
-      case 'network-request-failed':
-        _errorMessage = 'Network error. Check your internet connection.';
-        break;
-      default:
-        _errorMessage = 'Authentication error. Please try again.';
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  void _handleFirebaseError(dynamic e) {
+    if (e is FirebaseAuthException) {
+      switch (e.code) {
+        case 'email-already-in-use':
+          _errorMessage = 'This email is already in use.';
+          break;
+        case 'weak-password':
+          _errorMessage = 'Password is too weak.';
+          break;
+        case 'wrong-password':
+          _errorMessage = 'Incorrect password.';
+          break;
+        default:
+          _errorMessage = 'Authentication failed. Try again.';
+      }
     }
     notifyListeners();
   }

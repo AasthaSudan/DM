@@ -5,10 +5,13 @@ class DatabaseService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Map<String, dynamic>? userData;
+  String _role = 'student'; // default role
 
   // Emergency contacts cache
   List<Map<String, dynamic>> _emergencyContacts = [];
   List<Map<String, dynamic>> get emergencyContacts => _emergencyContacts;
+
+  String get role => _role;
 
   // ------------------- USER DATA -------------------
 
@@ -19,10 +22,12 @@ class DatabaseService extends ChangeNotifier {
 
       if (doc.exists && doc.data() != null) {
         userData = doc.data();
+        _role = userData?['role'] ?? 'student';
       } else {
         userData = {
           'name': '',
           'email': '',
+          'role': 'student',
           'rank': 'Beginner',
           'safetyScore': 0,
           'modulesCompleted': 0,
@@ -30,23 +35,22 @@ class DatabaseService extends ChangeNotifier {
           'profileComplete': false,
           'createdAt': FieldValue.serverTimestamp(),
         };
-        await _firestore
-            .collection('users')
-            .doc(uid)
-            .set(userData!, SetOptions(merge: true));
+        _role = 'student';
+        await _firestore.collection('users').doc(uid).set(userData!, SetOptions(merge: true));
       }
+      notifyListeners();
     } catch (e) {
       print('⚠️ Error loading user data: $e');
     }
   }
 
   // ✏️ Update user profile info
-  Future<void> updateUserProfile(Map<String, dynamic> data,
-      {required String uid}) async {
+  Future<void> updateUserProfile(Map<String, dynamic> data, {required String uid}) async {
     try {
       await _firestore.collection('users').doc(uid).set(data, SetOptions(merge: true));
       userData ??= {};
       userData!.addAll(data);
+      if (data.containsKey('role')) _role = data['role'];
       notifyListeners();
     } catch (e) {
       print('⚠️ Error updating user profile: $e');
@@ -54,11 +58,7 @@ class DatabaseService extends ChangeNotifier {
   }
 
   // 🧮 Update modules completed and safety score
-  Future<void> updateProgress({
-    required String uid,
-    int modules = 0,
-    int score = 0,
-  }) async {
+  Future<void> updateProgress({required String uid, int modules = 0, int score = 0}) async {
     try {
       final docRef = _firestore.collection('users').doc(uid);
 
@@ -91,7 +91,7 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  // 🏅 Optional: calculate user rank based on safety score
+  // 🏅 Calculate user rank based on safety score
   String _calculateRank(int score) {
     if (score >= 100) return 'Expert';
     if (score >= 60) return 'Advanced';
@@ -105,6 +105,7 @@ class DatabaseService extends ChangeNotifier {
       final snapshot = await _firestore.collection('users').doc(uid).get();
       if (snapshot.exists) {
         userData = snapshot.data();
+        _role = userData?['role'] ?? 'student';
         notifyListeners();
       }
     } catch (e) {
@@ -114,35 +115,20 @@ class DatabaseService extends ChangeNotifier {
 
   // ------------------- EMERGENCY CONTACTS -------------------
 
-  // Load emergency contacts
   Future<void> loadEmergencyContacts(String uid) async {
     try {
-      final snapshot = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('emergency_contacts')
-          .get();
+      final snapshot = await _firestore.collection('users').doc(uid).collection('emergency_contacts').get();
 
-      _emergencyContacts = snapshot.docs
-          .map((doc) => {'id': doc.id, ...doc.data()})
-          .toList();
-
+      _emergencyContacts = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
       notifyListeners();
     } catch (e) {
       print('⚠️ Error loading emergency contacts: $e');
     }
   }
 
-  // Add emergency contact
-  Future<void> addEmergencyContact(
-      String uid, Map<String, dynamic> contact) async {
+  Future<void> addEmergencyContact(String uid, Map<String, dynamic> contact) async {
     try {
-      final docRef = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('emergency_contacts')
-          .add(contact);
-
+      final docRef = await _firestore.collection('users').doc(uid).collection('emergency_contacts').add(contact);
       _emergencyContacts.add({'id': docRef.id, ...contact});
       notifyListeners();
     } catch (e) {
@@ -150,16 +136,9 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  // Delete emergency contact
   Future<void> deleteEmergencyContact(String uid, String contactId) async {
     try {
-      await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('emergency_contacts')
-          .doc(contactId)
-          .delete();
-
+      await _firestore.collection('users').doc(uid).collection('emergency_contacts').doc(contactId).delete();
       _emergencyContacts.removeWhere((c) => c['id'] == contactId);
       notifyListeners();
     } catch (e) {
@@ -169,16 +148,9 @@ class DatabaseService extends ChangeNotifier {
 
   // ------------------- MODULE SCORES -------------------
 
-  // Get module score
   Future<int> getModuleScore(String uid, String moduleId) async {
     try {
-      final doc = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('modules')
-          .doc(moduleId)
-          .get();
-
+      final doc = await _firestore.collection('users').doc(uid).collection('modules').doc(moduleId).get();
       return doc.data()?['score'] ?? 0;
     } catch (e) {
       print('⚠️ Error getting module score: $e');
@@ -186,15 +158,9 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  // Update module score
   Future<void> updateModuleScore(String uid, String moduleId, int score) async {
     try {
-      await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('modules')
-          .doc(moduleId)
-          .set({'score': score}, SetOptions(merge: true));
+      await _firestore.collection('users').doc(uid).collection('modules').doc(moduleId).set({'score': score}, SetOptions(merge: true));
       notifyListeners();
     } catch (e) {
       print('⚠️ Error updating module score: $e');

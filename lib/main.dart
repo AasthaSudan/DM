@@ -13,12 +13,10 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase with options
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform, // Use the generated FirebaseOptions
+    options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Set system UI overlays
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -42,11 +40,10 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
-        // Changed to Provider instead of ChangeNotifierProvider
-        Provider(create: (_) => DatabaseService()),
+        ChangeNotifierProvider(create: (_) => DatabaseService()),
       ],
       child: MaterialApp(
-        title: 'PrepareEd',
+        title: 'PrepareED',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
@@ -54,44 +51,8 @@ class MyApp extends StatelessWidget {
             primary: const Color(0xFF21C573),
           ),
           useMaterial3: true,
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF21C573),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF21C573),
-                width: 2,
-              ),
-            ),
-          ),
-          // Fixed CardTheme to CardThemeData
-          cardTheme: const CardThemeData(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
-            ),
-          ),
         ),
-        initialRoute: '/',
-        routes: {
-          '/': (context) => const AuthWrapper(),
-          '/onboarding': (context) => const OnboardingScreen(),
-          '/auth': (context) => const AuthScreen(),
-          // Changed HomeScreen to HomePage
-          '/home': (context) => const HomeScreen(),
-        },
+        home: const AuthWrapper(),
       ),
     );
   }
@@ -103,15 +64,10 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthService>(
-      builder: (context, authService, _) {
-        if (authService.isLoading) {
-          return const SplashScreen();
-        }
+      builder: (context, auth, _) {
+        if (auth.isLoading) return const SplashScreen();
 
-        if (authService.currentUser != null) {
-          // Changed HomeScreen to HomePage
-          return const HomeScreen();
-        }
+        if (auth.currentUser != null) return const HomeScreen();
 
         return const OnboardingScreen();
       },
