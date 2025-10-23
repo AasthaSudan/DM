@@ -52,17 +52,22 @@ class _AuthScreenState extends State<AuthScreen> {
 
     setState(() => _isLoading = true);
 
-    bool success = await authService.signUpWithEmail(email, password, name);
+    try {
+      bool success = await authService.signUpWithEmail(email, password, name);
+      if (!mounted) return;
 
-    setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
 
-    if (success && mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    } else {
-      _showMessage(authService.errorMessage ?? 'Sign-up failed');
+      if (success) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      } else {
+        _showMessage(authService.errorMessage ?? 'Sign-up failed');
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showMessage('Error: $e');
     }
   }
 
@@ -96,7 +101,20 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Color pastelGreen = const Color(0xFF388E3C);
+    const Color green = Color(0xFF21C573);
+    const Color blue = Color(0xFF1791B6);
+    final LinearGradient backgroundGradient = const LinearGradient(
+      colors: [blue, green],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
+    final LinearGradient buttonGradient = const LinearGradient(
+      colors: [Color(0xFFAAF1E1), Color(0xFFB6E0FF)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
@@ -118,16 +136,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
           return Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  pastelGreen.withOpacity(0.18),
-                  Colors.white,
-                  Colors.white,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: const [0, 0.45, 1],
-              ),
+              gradient: backgroundGradient,
             ),
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top,
@@ -212,8 +221,8 @@ class _AuthScreenState extends State<AuthScreen> {
                             label: 'Confirm Password',
                             showText: _showConfirmPassword,
                             toggleVisibility: () {
-                              setState(() => _showConfirmPassword =
-                              !_showConfirmPassword);
+                              setState(
+                                      () => _showConfirmPassword = !_showConfirmPassword);
                             },
                           ),
                           const SizedBox(height: 10),
@@ -222,7 +231,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             children: [
                               Checkbox(
                                 value: _agree,
-                                activeColor: pastelGreen,
+                                activeColor: green,
                                 onChanged: (val) =>
                                     setState(() => _agree = val ?? false),
                               ),
@@ -236,7 +245,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       TextSpan(
                                         text: 'Terms & Conditions',
                                         style: TextStyle(
-                                          color: pastelGreen,
+                                          color: green,
                                           fontWeight: FontWeight.w600,
                                           decoration: TextDecoration.underline,
                                         ),
@@ -249,25 +258,39 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
 
                           const SizedBox(height: 4),
+                          // Sign Up Button with Light Gradient
                           SizedBox(
                             width: double.infinity,
                             height: 52,
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _onSignUp,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: pastelGreen,
+                                padding: EdgeInsets.zero,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
+                                backgroundColor: Colors.transparent,
+                                elevation: 0,
                               ),
-                              child: _isLoading
-                                  ? const CircularProgressIndicator(
-                                  color: Colors.white)
-                                  : const Text(
-                                'Sign Up',
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600),
+                              child: Ink(
+                                decoration: BoxDecoration(
+                                  gradient: buttonGradient,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  child: _isLoading
+                                      ? const CircularProgressIndicator(
+                                      color: Colors.black87)
+                                      : const Text(
+                                    'Sign Up',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -308,7 +331,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   'Sign In',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: pastelGreen,
+                                    color: green,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -379,7 +402,6 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 }
 
-// ✅ Divider widget
 class _OrDivider extends StatelessWidget {
   final String text;
   const _OrDivider({required this.text});
@@ -403,7 +425,6 @@ class _OrDivider extends StatelessWidget {
   }
 }
 
-// ✅ Social button widget
 class SocialIconButton extends StatelessWidget {
   final String? assetName;
   final String? label;

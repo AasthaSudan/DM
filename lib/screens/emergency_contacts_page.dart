@@ -54,17 +54,27 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   @override
   void initState() {
     super.initState();
-    _loadContacts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadContacts();
+    });
   }
 
   Future<void> _loadContacts() async {
-    final dbService = Provider.of<DatabaseService>(context, listen: false);
-    final currentUserId = 'someUserId'; // TODO: Replace with actual logged-in user ID
-    await dbService.loadEmergencyContacts(currentUserId);
+    try {
+      final dbService = Provider.of<DatabaseService>(context, listen: false);
+      final currentUserId = 'someUserId'; // TODO: Replace with actual logged-in user ID
+      await dbService.loadEmergencyContacts(currentUserId);
+    } catch (e) {
+      debugPrint('Error loading contacts: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width > 600;
+    final isLandscape = size.width > size.height;
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -78,11 +88,15 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(20.0),
+                padding: EdgeInsets.all(isTablet ? 24.0 : 20.0),
                 child: Row(
                   children: [
-                    const Icon(Icons.emergency, color: Colors.white, size: 32),
-                    const SizedBox(width: 12),
+                    Icon(
+                      Icons.emergency,
+                      color: Colors.white,
+                      size: isTablet ? 40 : 32,
+                    ),
+                    SizedBox(width: isTablet ? 16 : 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,12 +106,14 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
+                              fontSize: isTablet ? 28 : null,
                             ),
                           ),
                           Text(
                             'Quick access to important numbers',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Colors.white70,
+                              fontSize: isTablet ? 16 : null,
                             ),
                           ),
                         ],
@@ -120,7 +136,10 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                     child: Column(
                       children: [
                         Container(
-                          margin: const EdgeInsets.all(20),
+                          margin: EdgeInsets.all(isTablet ? 24 : 20),
+                          constraints: BoxConstraints(
+                            maxWidth: isTablet ? 600 : double.infinity,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(12),
@@ -136,17 +155,26 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                             unselectedLabelColor: Colors.grey.shade600,
                             indicatorSize: TabBarIndicatorSize.tab,
                             dividerColor: Colors.transparent,
-                            tabs: const [
-                              Tab(icon: Icon(Icons.local_phone), text: 'Emergency'),
-                              Tab(icon: Icon(Icons.contacts), text: 'Personal'),
+                            labelStyle: TextStyle(
+                              fontSize: isTablet ? 16 : 14,
+                            ),
+                            tabs: [
+                              Tab(
+                                icon: Icon(Icons.local_phone, size: isTablet ? 28 : 24),
+                                text: 'Emergency',
+                              ),
+                              Tab(
+                                icon: Icon(Icons.contacts, size: isTablet ? 28 : 24),
+                                text: 'Personal',
+                              ),
                             ],
                           ),
                         ),
                         Expanded(
                           child: TabBarView(
                             children: [
-                              _buildEmergencyTab(),
-                              _buildPersonalTab(),
+                              _buildEmergencyTab(isTablet, isLandscape),
+                              _buildPersonalTab(isTablet, isLandscape),
                             ],
                           ),
                         ),
@@ -162,12 +190,37 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddContactDialog,
         backgroundColor: const Color(0xFF21C573),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Colors.white, size: isTablet ? 28 : 24),
       ),
     );
   }
 
-  Widget _buildEmergencyTab() {
+  Widget _buildEmergencyTab(bool isTablet, bool isLandscape) {
+    if (isTablet || isLandscape) {
+      return GridView.builder(
+        padding: EdgeInsets.all(isTablet ? 24 : 20),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: isLandscape ? 2 : 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: isTablet ? 2.5 : 2.2,
+        ),
+        itemCount: _emergencyServices.length,
+        itemBuilder: (context, index) {
+          final service = _emergencyServices[index];
+          return _buildContactCard(
+            service['name']!,
+            service['number']!,
+            service['type']!,
+            _getServiceIcon(service['icon']!),
+            const Color(0xFFE74C3C),
+            isEmergency: true,
+            isTablet: isTablet,
+          );
+        },
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(20),
       itemCount: _emergencyServices.length,
@@ -180,61 +233,103 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
           _getServiceIcon(service['icon']!),
           const Color(0xFFE74C3C),
           isEmergency: true,
+          isTablet: false,
         );
       },
     );
   }
 
-  Widget _buildPersonalTab() {
+  Widget _buildPersonalTab(bool isTablet, bool isLandscape) {
     return Consumer<DatabaseService>(
       builder: (context, dbService, _) {
         final contacts = dbService.emergencyContacts;
 
         if (contacts.isEmpty) {
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF21C573).withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.contact_phone,
-                    size: 60,
-                    color: Color(0xFF21C573),
-                  ),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.all(isTablet ? 32 : 24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(isTablet ? 32 : 20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF21C573).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.contact_phone,
+                        size: isTablet ? 80 : 60,
+                        color: const Color(0xFF21C573),
+                      ),
+                    ),
+                    SizedBox(height: isTablet ? 32 : 20),
+                    Text(
+                      'No Personal Contacts',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.bold,
+                        fontSize: isTablet ? 28 : null,
+                      ),
+                    ),
+                    SizedBox(height: isTablet ? 12 : 8),
+                    Text(
+                      'Add your family and friends for quick access',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade500,
+                        fontSize: isTablet ? 18 : null,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: isTablet ? 32 : 24),
+                    ElevatedButton.icon(
+                      onPressed: _showAddContactDialog,
+                      icon: Icon(Icons.add, size: isTablet ? 24 : 20),
+                      label: Text(
+                        'Add Contact',
+                        style: TextStyle(fontSize: isTablet ? 18 : 16),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF21C573),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 32 : 24,
+                          vertical: isTablet ? 16 : 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  'No Personal Contacts',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Add your family and friends for quick access',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: _showAddContactDialog,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Contact'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF21C573),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                ),
-              ],
+              ),
+            ),
+          );
+        }
+
+        if (isTablet || isLandscape) {
+          return RefreshIndicator(
+            onRefresh: _loadContacts,
+            child: GridView.builder(
+              padding: EdgeInsets.all(isTablet ? 24 : 20),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: isLandscape ? 2 : 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: isTablet ? 2.5 : 2.2,
+              ),
+              itemCount: contacts.length,
+              itemBuilder: (context, index) {
+                final contact = contacts[index];
+                return _buildContactCard(
+                  contact['name']!,
+                  contact['number']!,
+                  contact['relationship']!,
+                  Icons.person,
+                  const Color(0xFF21C573),
+                  onDelete: () => _deleteContact(contact['id']!),
+                  isTablet: isTablet,
+                );
+              },
             ),
           );
         }
@@ -253,6 +348,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                 Icons.person,
                 const Color(0xFF21C573),
                 onDelete: () => _deleteContact(contact['id']!),
+                isTablet: false,
               );
             },
           ),
@@ -269,9 +365,13 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
       Color color, {
         bool isEmergency = false,
         VoidCallback? onDelete,
+        bool isTablet = false,
       }) {
+    final iconSize = isTablet ? 60.0 : 50.0;
+    final contentPadding = isTablet ? 20.0 : 16.0;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: isTablet ? 0 : 12),
       child: Card(
         elevation: 4,
         shadowColor: Colors.grey.withOpacity(0.2),
@@ -279,12 +379,79 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+          padding: EdgeInsets.all(contentPadding),
+          child: isTablet
+              ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: iconSize,
+                    height: iconSize,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: color.withOpacity(0.3)),
+                    ),
+                    child: Icon(icon, color: color, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2C3E50),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          type,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      number,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  _buildActionButtons(number, color, isEmergency, onDelete, isTablet),
+                ],
+              ),
+            ],
+          )
+              : Row(
             children: [
               Container(
-                width: 50,
-                height: 50,
+                width: iconSize,
+                height: iconSize,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
@@ -306,6 +473,8 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF2C3E50),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -315,6 +484,8 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                         color: Colors.grey.shade600,
                         fontWeight: FontWeight.w500,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -328,52 +499,69 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                   ],
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: IconButton(
-                      onPressed: () => _makeCall(number),
-                      icon: Icon(Icons.phone, color: color, size: 20),
-                      tooltip: 'Call',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: IconButton(
-                      onPressed: () => _sendSMS(number),
-                      icon: const Icon(Icons.message, color: Colors.blue, size: 20),
-                      tooltip: 'SMS',
-                    ),
-                  ),
-                  if (!isEmergency && onDelete != null) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: IconButton(
-                        onPressed: onDelete,
-                        icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                        tooltip: 'Delete',
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+              _buildActionButtons(number, color, isEmergency, onDelete, isTablet),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildActionButtons(
+      String number, Color color, bool isEmergency, VoidCallback? onDelete, bool isTablet) {
+    final buttonSize = isTablet ? 44.0 : 36.0;
+    final iconSize = isTablet ? 22.0 : 20.0;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: buttonSize,
+          height: buttonSize,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: IconButton(
+            onPressed: () => _makeCall(number),
+            icon: Icon(Icons.phone, color: color, size: iconSize),
+            tooltip: 'Call',
+            padding: EdgeInsets.zero,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          width: buttonSize,
+          height: buttonSize,
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: IconButton(
+            onPressed: () => _sendSMS(number),
+            icon: Icon(Icons.message, color: Colors.blue, size: iconSize),
+            tooltip: 'SMS',
+            padding: EdgeInsets.zero,
+          ),
+        ),
+        if (!isEmergency && onDelete != null) ...[
+          const SizedBox(width: 8),
+          Container(
+            width: buttonSize,
+            height: buttonSize,
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              onPressed: onDelete,
+              icon: Icon(Icons.delete, color: Colors.red, size: iconSize),
+              tooltip: 'Delete',
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -418,92 +606,178 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
     final nameController = TextEditingController();
     final numberController = TextEditingController();
     final relationshipController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width > 600;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(isTablet ? 10 : 8),
               decoration: BoxDecoration(
                 color: const Color(0xFF21C573).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.person_add, color: Color(0xFF21C573)),
+              child: Icon(
+                Icons.person_add,
+                color: const Color(0xFF21C573),
+                size: isTablet ? 28 : 24,
+              ),
             ),
-            const SizedBox(width: 12),
-            const Text('Add Contact'),
+            SizedBox(width: isTablet ? 16 : 12),
+            Text(
+              'Add Contact',
+              style: TextStyle(fontSize: isTablet ? 22 : 18),
+            ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                prefixIcon: const Icon(Icons.person),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isTablet ? 500 : double.infinity,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    style: TextStyle(fontSize: isTablet ? 18 : 16),
+                    decoration: InputDecoration(
+                      labelText: 'Name',
+                      labelStyle: TextStyle(fontSize: isTablet ? 16 : 14),
+                      prefixIcon: Icon(Icons.person, size: isTablet ? 28 : 24),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a name';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: isTablet ? 20 : 16),
+                  TextFormField(
+                    controller: numberController,
+                    keyboardType: TextInputType.phone,
+                    style: TextStyle(fontSize: isTablet ? 18 : 16),
+                    decoration: InputDecoration(
+                      labelText: 'Phone Number',
+                      labelStyle: TextStyle(fontSize: isTablet ? 16 : 14),
+                      prefixIcon: Icon(Icons.phone, size: isTablet ? 28 : 24),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a phone number';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: isTablet ? 20 : 16),
+                  TextFormField(
+                    controller: relationshipController,
+                    style: TextStyle(fontSize: isTablet ? 18 : 16),
+                    decoration: InputDecoration(
+                      labelText: 'Relationship',
+                      labelStyle: TextStyle(fontSize: isTablet ? 16 : 14),
+                      prefixIcon: Icon(Icons.group, size: isTablet ? 28 : 24),
+                      hintText: 'e.g., Family, Friend, Doctor',
+                      hintStyle: TextStyle(fontSize: isTablet ? 16 : 14),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: numberController,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: 'Phone Number',
-                prefixIcon: const Icon(Icons.phone),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: relationshipController,
-              decoration: InputDecoration(
-                labelText: 'Relationship',
-                prefixIcon: const Icon(Icons.group),
-                hintText: 'e.g., Family, Friend, Doctor',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancel',
+              style: TextStyle(fontSize: isTablet ? 18 : 16),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
-              if (nameController.text.isNotEmpty && numberController.text.isNotEmpty) {
-                final dbService = Provider.of<DatabaseService>(context, listen: false);
-                final currentUserId = 'someUserId'; // TODO: Replace with actual user ID
+              if (formKey.currentState!.validate()) {
+                // Show loading indicator
+                showDialog(
+                  context: dialogContext,
+                  barrierDismissible: false,
+                  builder: (loadingContext) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
 
                 try {
-                  await dbService.addEmergencyContact(
-                    currentUserId,
-                    {
-                      'name': nameController.text,
-                      'number': numberController.text,
-                      'relationship': relationshipController.text.isEmpty
-                          ? 'Contact'
-                          : relationshipController.text,
-                    },
-                  );
-                  Navigator.pop(context);
-                  _showSuccessSnackBar('Contact added successfully');
-                } catch (_) {
-                  Navigator.pop(context);
-                  _showErrorSnackBar('Failed to add contact');
+                  final dbService = Provider.of<DatabaseService>(context, listen: false);
+                  final currentUserId = 'someUserId'; // TODO: Replace with actual user ID
+
+                  final contactData = {
+                    'name': nameController.text.trim(),
+                    'number': numberController.text.trim(),
+                    'relationship': relationshipController.text.trim().isEmpty
+                        ? 'Contact'
+                        : relationshipController.text.trim(),
+                  };
+
+                  debugPrint('Adding contact: $contactData');
+
+                  await dbService.addEmergencyContact(currentUserId, contactData);
+
+                  // Close loading dialog
+                  if (mounted) Navigator.pop(dialogContext);
+                  // Close add contact dialog
+                  if (mounted) Navigator.pop(dialogContext);
+
+                  // Reload contacts to show the new one
+                  await _loadContacts();
+
+                  if (mounted) {
+                    _showSuccessSnackBar('Contact added successfully');
+                  }
+                } catch (e) {
+                  debugPrint('Error adding contact: $e');
+                  // Close loading dialog
+                  if (mounted) Navigator.pop(dialogContext);
+                  // Close add contact dialog
+                  if (mounted) Navigator.pop(dialogContext);
+
+                  if (mounted) {
+                    _showErrorSnackBar('Failed to add contact: ${e.toString()}');
+                  }
                 }
               }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF21C573),
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(
+                horizontal: isTablet ? 24 : 20,
+                vertical: isTablet ? 14 : 12,
+              ),
             ),
-            child: const Text('Add Contact'),
+            child: Text(
+              'Add Contact',
+              style: TextStyle(
+                fontSize: isTablet ? 18 : 16,
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),
@@ -511,33 +785,80 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   }
 
   void _deleteContact(String contactId) {
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width > 600;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Contact'),
-        content: const Text('Are you sure you want to delete this contact?'),
+        title: Text(
+          'Delete Contact',
+          style: TextStyle(fontSize: isTablet ? 22 : 18),
+        ),
+        content: Text(
+          'Are you sure you want to delete this contact?',
+          style: TextStyle(fontSize: isTablet ? 18 : 16),
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancel',
+              style: TextStyle(fontSize: isTablet ? 18 : 16),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
-              final dbService = Provider.of<DatabaseService>(context, listen: false);
-              final currentUserId = 'someUserId'; // TODO: Replace with actual user ID
+              // Show loading indicator
+              showDialog(
+                context: dialogContext,
+                barrierDismissible: false,
+                builder: (loadingContext) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
 
               try {
+                final dbService = Provider.of<DatabaseService>(context, listen: false);
+                final currentUserId = 'someUserId'; // TODO: Replace with actual user ID
+
                 await dbService.deleteEmergencyContact(currentUserId, contactId);
-                Navigator.pop(context);
-                _showSuccessSnackBar('Contact deleted');
-              } catch (_) {
-                Navigator.pop(context);
-                _showErrorSnackBar('Failed to delete contact');
+
+                // Close loading dialog
+                if (mounted) Navigator.pop(dialogContext);
+                // Close delete dialog
+                if (mounted) Navigator.pop(dialogContext);
+
+                // Reload contacts
+                await _loadContacts();
+
+                if (mounted) {
+                  _showSuccessSnackBar('Contact deleted');
+                }
+              } catch (e) {
+                debugPrint('Error deleting contact: $e');
+                // Close loading dialog
+                if (mounted) Navigator.pop(dialogContext);
+                // Close delete dialog
+                if (mounted) Navigator.pop(dialogContext);
+
+                if (mounted) {
+                  _showErrorSnackBar('Failed to delete contact: ${e.toString()}');
+                }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              padding: EdgeInsets.symmetric(
+                horizontal: isTablet ? 24 : 20,
+                vertical: isTablet ? 14 : 12,
+              ),
+            ),
+            child: Text(
+              'Delete',
+              style: TextStyle(fontSize: isTablet ? 18 : 16),
+            ),
           ),
         ],
       ),
@@ -560,6 +881,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
         content: Text(message),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
       ),
     );
   }

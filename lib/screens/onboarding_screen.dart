@@ -3,7 +3,9 @@ import 'package:lottie/lottie.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  final VoidCallback onFinished;
+
+  const OnboardingScreen({super.key, required this.onFinished});
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -31,13 +33,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     },
   ];
 
+  void _finishOnboarding() {
+    widget.onFinished();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF21C573), Color(0xFF1791B6)], // Matching your app theme
+            colors: [Color(0xFF21C573), Color(0xFF1791B6)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -51,12 +57,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: Padding(
                   padding: const EdgeInsets.only(right: 8.0, top: 8.0),
                   child: TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, "/auth");
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    ),
+                    onPressed: _finishOnboarding,
                     child: const Text(
                       "Skip",
                       style: TextStyle(
@@ -69,7 +70,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
 
-              // PageView with Expanded to take available space
+              // PageView
               Expanded(
                 child: PageView.builder(
                   controller: _controller,
@@ -84,42 +85,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Flexible Lottie animation with better error handling
                           Flexible(
                             flex: 3,
                             child: AnimatedOpacity(
                               opacity: _currentIndex == index ? 1.0 : 0.0,
                               duration: const Duration(milliseconds: 500),
-                              child: Container(
-                                constraints: const BoxConstraints(
-                                  maxHeight: 300,
-                                  maxWidth: 300,
-                                ),
-                                child: Lottie.asset(
-                                  data["animation"]!,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      height: 200,
-                                      width: 200,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(100),
-                                      ),
-                                      child: const Icon(
-                                        Icons.image_not_supported_outlined,
-                                        size: 80,
-                                        color: Colors.white54,
-                                      ),
-                                    );
-                                  },
+                              child: Lottie.asset(
+                                data["animation"]!,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  height: 200,
+                                  width: 200,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(100),
+                                  ),
+                                  child: const Icon(
+                                    Icons.image_not_supported_outlined,
+                                    size: 80,
+                                    color: Colors.white54,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                           const SizedBox(height: 32),
-
-                          // Title with better typography
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 500),
                             child: Text(
@@ -129,34 +119,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
-                                letterSpacing: -0.5,
                               ),
                               textAlign: TextAlign.center,
                             ),
                           ),
                           const SizedBox(height: 16),
-
-                          // Description with better spacing
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 500),
-                            child: Container(
+                            child: Text(
+                              data["desc"]!,
                               key: ValueKey(data["desc"]),
-                              constraints: const BoxConstraints(maxWidth: 300),
-                              child: Text(
-                                data["desc"]!,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                  height: 1.5,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                                textAlign: TextAlign.center,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                height: 1.5,
                               ),
+                              textAlign: TextAlign.center,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(height: 40),
                         ],
                       ),
                     );
@@ -164,7 +146,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
 
-              // Page Indicator with theme colors
+              // Page Indicator
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: SmoothPageIndicator(
@@ -192,15 +174,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       duration: const Duration(milliseconds: 300),
                       opacity: _currentIndex > 0 ? 1.0 : 0.0,
                       child: TextButton(
-                        onPressed: _currentIndex > 0 ? () {
-                          _controller.previousPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        } : null,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
+                        onPressed: _currentIndex > 0
+                            ? () => _controller.previousPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        )
+                            : null,
                         child: const Text(
                           "Back",
                           style: TextStyle(
@@ -212,10 +191,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ),
 
-                    // Get Started/Next Button with green theme
+                    // Next / Get Started Button
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
                       height: 56,
                       width: _currentIndex == onboardingData.length - 1 ? 140 : 56,
                       decoration: BoxDecoration(
@@ -233,16 +211,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(28),
-                          onTap: () {
-                            if (_currentIndex == onboardingData.length - 1) {
-                              Navigator.pushReplacementNamed(context, "/auth");
-                            } else {
-                              _controller.nextPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            }
-                          },
+                          onTap: _currentIndex == onboardingData.length - 1
+                              ? _finishOnboarding
+                              : () => _controller.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          ),
                           child: Center(
                             child: AnimatedSwitcher(
                               duration: const Duration(milliseconds: 200),
